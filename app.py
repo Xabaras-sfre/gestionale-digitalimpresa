@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
-import urllib.parse  # <--- NUOVA LIBRERIA PER IL FIX DELLA PASSWORD
+import urllib.parse
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -10,22 +10,17 @@ from datetime import datetime, date
 # --- 1. CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Network 2026 - Cloud DB", layout="wide", page_icon="☁️")
 
-# --- 2. CONNESSIONE MYSQL (SITEGROUND) CON FIX PASSWORD ---
+# --- 2. CONNESSIONE MYSQL (SITEGROUND) ---
 @st.cache_resource
 def init_connection():
     db = st.secrets["mysql"]
-    
-    # FIX: Codifichiamo la password per evitare che simboli come @ o # rompano l'URL
     password_sicura = urllib.parse.quote_plus(db['password'])
-    
-    # Stringa di connessione professionale per MySQL
     url = f"mysql+pymysql://{db['user']}:{password_sicura}@{db['host']}:{db['port']}/{db['database']}?charset=utf8mb4"
     return create_engine(url)
 
 engine = init_connection()
 
 def init_db():
-    """Crea la struttura su SiteGround al primo avvio"""
     with engine.begin() as conn:
         conn.execute(text('''CREATE TABLE IF NOT EXISTS Agenti (
             ID_Agente VARCHAR(50) PRIMARY KEY, Nome VARCHAR(100), Ruolo VARCHAR(50), 
@@ -50,7 +45,6 @@ def init_db():
         conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Pagamenti (
             ID_Ordine VARCHAR(50), Data DATE, Importo_Pagato DOUBLE, Metodo VARCHAR(50))'''))
 
-        # Creazione Superadmin di default se la tabella è vuota
         res = conn.execute(text("SELECT COUNT(*) FROM Agenti")).scalar()
         if res == 0:
             conn.execute(text("INSERT INTO Agenti VALUES (:id, :n, :r, :c, :m, :p)"), 
@@ -63,13 +57,11 @@ def load_data(table_name):
     df = pd.read_sql_table(table_name, con=engine)
     if table_name == 'Ordini' and not df.empty and 'Data_Ordine' in df.columns:
         df['Data_Ordine'] = pd.to_datetime(df['Data_Ordine'], errors='coerce')
-    # Forza ID come stringhe per i filtri
     if 'ID_Agente' in df.columns: df['ID_Agente'] = df['ID_Agente'].astype(str)
     if 'ID_Ordine' in df.columns: df['ID_Ordine'] = df['ID_Ordine'].astype(str)
     return df
 
 def execute_query(query, params=None):
-    """Esegue comandi di scrittura sul DB in modo sicuro"""
     with engine.begin() as conn:
         conn.execute(text(query), params or {})
 
@@ -105,7 +97,7 @@ if not st.session_state.auth:
                 if not user.empty:
                     st.session_state.update({"auth": True, "user": user.iloc[0].to_dict()})
                     st.rerun()
-                else: st.error("❌ Credenziali errate. Usa 'Admin' / 'admin123' se è il primo avvio.")
+                else: st.error("❌ Credenziali errate.")
     st.stop()
 
 # --- 6. NAVIGAZIONE ---
@@ -133,23 +125,42 @@ if menu == "📊 Dashboard BI":
     df_n = load_data("Negozi")
     df_b = load_data("Brand")
     df_a = load_data("Agenti")
-    
-    if not df_o.empty and ROLE != "Superadmin":
-        df_o = df_o[df_o['ID_Agente'] == str(U['ID_Agente'])]
 
     if df_o.empty:
         st.info("Nessun ordine nel Database.")
     else:
+        # MERGE DEI DATI
         df = pd.merge(df_o, df_n, left_on='ID_Negozio', right_on='Nome', how='left')
-        df = pd.merge(df, df_a[['ID_Agente', 'Nome']], on='ID_Agente', suffixes=('', '_Agente'), how='left')
+        df = pd.merge(df, df_a[['ID_Agente', 'Nome', 'Ruolo']], on='ID_Agente', suffixes=('', '_Agente'), how='left')
         
+        # PULIZIA PERCENTUALI BRAND
         def p2f(x): return float(str(x).replace('%','').replace(',','.')) / 100 if pd.notnull(x) and x != '' else 0.0
-        df_b['rate'] = df_b['Quota_Agente_perc'].apply(p2f)
-        df = pd.merge(df, df_b[['Nome_Brand', 'rate']], left_on='Brand', right_on='Nome_Brand', how='left')
+        df_b['rate_totale'] = df_b['Provvigione_Totale_perc'].apply(p2f)
+        df_b['rate_agente'] = df_b['Quota_Agente_perc'].apply(p2f)
         
-        df['Maturato_€'] = df['Consegnato_€'] * df['rate'].fillna(0)
-        df['Esigibile_€'] = df['Incassato_€'] * df['rate'].fillna(0)
+        df = pd.merge(df, df_b[['Nome_Brand', 'rate_totale', 'rate_agente']], left_on='Brand', right_on='Nome_Brand', how='left')
+        
+        # --- FIX: CALCOLO DELLE PROVVIGIONI SPLITTATE ---
+        
+        # 1. Quanto spetta all'Agente (0 se l'ordine è del Superadmin)
+        df['Provv_Agente_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
+        df['Provv_Agente_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
+        
+        # 2. Quanto spetta al Superadmin (Totale se ordine suo, Differenza se ordine Agente)
+        df['Provv_Admin_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Consegnato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
+        df['Provv_Admin_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Incassato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
+        
+        # ASSEGNAZIONE VISTA CORRENTE
+        if ROLE == "Superadmin":
+            df['Mio_Maturato'] = df['Provv_Admin_Maturata']
+            df['Mio_Esigibile'] = df['Provv_Admin_Esigibile']
+        else:
+            # Se è un agente, vede solo i suoi ordini
+            df = df[df['ID_Agente'] == str(U['ID_Agente'])]
+            df['Mio_Maturato'] = df['Provv_Agente_Maturata']
+            df['Mio_Esigibile'] = df['Provv_Agente_Esigibile']
 
+        # FILTRI DINAMICI
         st.markdown("### 🔍 Filtri Dinamici")
         f1, f2, f3 = st.columns(3)
         with f1:
@@ -173,21 +184,24 @@ if menu == "📊 Dashboard BI":
         
         df_filtered = df[mask]
 
+        # KPI
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Ordini", len(df_filtered))
-        c2.metric("Ordinato", f"{df_filtered['Ordinato_€'].sum():,.2f} €")
-        c3.metric("Maturato", f"{df_filtered['Maturato_€'].sum():,.2f} €")
-        c4.metric("Esigibile", f"{df_filtered['Esigibile_€'].sum():,.2f} €")
+        c1.metric("Ordini (Q.tà)", len(df_filtered))
+        c2.metric("Fatturato Lordo (€)", f"{df_filtered['Ordinato_€'].sum():,.2f} €")
+        c3.metric("Mio Maturato (€)", f"{df_filtered['Mio_Maturato'].sum():,.2f} €")
+        c4.metric("Mio Esigibile (€)", f"{df_filtered['Mio_Esigibile'].sum():,.2f} €")
 
         st.divider()
-        tab1, tab2, tab3 = st.tabs(["Geografia", "Brand", "Rete Vendita"])
+        tab1, tab2, tab3 = st.tabs(["Geografia", "Performance Brand", "Rete Vendita"])
         with tab1:
             if 'Regione' in df_filtered.columns: st.bar_chart(df_filtered.groupby('Regione')['Ordinato_€'].sum())
         with tab2:
-            st.dataframe(df_filtered.groupby('Brand').agg({'ID_Ordine':'count', 'Ordinato_€':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+            st.dataframe(df_filtered.groupby('Brand').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
         with tab3:
             if ROLE == "Superadmin":
-                st.dataframe(df_filtered.groupby('Nome_Agente').agg({'Ordinato_€':'sum', 'Consegnato_€':'sum', 'Esigibile_€':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+                st.dataframe(df_filtered.groupby('Nome_Agente').agg({'Ordinato_€':'sum', 'Consegnato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+            else:
+                st.info("I dati aggregati della rete sono visibili solo alla direzione.")
 
 elif menu == "📝 Nuovo Ordine":
     st.title("📝 Registra Ordine")
@@ -201,7 +215,7 @@ elif menu == "📝 Nuovo Ordine":
             brand = st.selectbox("Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else [])
         with c2:
             val = st.number_input("Valore (€)", min_value=0.0)
-            agente_id = st.selectbox("Agente", df_a['ID_Agente'].tolist()) if ROLE == "Superadmin" else U['ID_Agente']
+            agente_id = st.selectbox("Agente (Chi chiude il contratto?)", df_a['ID_Agente'].tolist()) if ROLE == "Superadmin" else U['ID_Agente']
             data_o = st.date_input("Data", date.today())
         
         if st.form_submit_button("Salva"):
@@ -212,9 +226,9 @@ elif menu == "📝 Nuovo Ordine":
                     
                     mail_dest = df_a[df_a['ID_Agente'] == str(agente_id)].iloc[0].get('Mail_Notifica', '')
                     send_email(id_o, U['Nome'], neg, brand, val, mail_dest)
-                    st.success("✅ Salvato nel Database Cloud!")
+                    st.success("✅ Ordine salvato e archiviato!")
                 except Exception as e:
-                    st.error("Errore: ID Ordine già esistente o dati non validi.")
+                    st.error("Errore: ID Ordine già esistente nel database.")
             else: st.error("Compila i campi obbligatori.")
 
 elif menu == "🚚 Consegne":
@@ -229,7 +243,7 @@ elif menu == "🚚 Consegne":
         residuo = r_dati['Ordinato_€'] - r_dati['Consegnato_€']
         
         val_scarico = st.number_input("Valore DDT (€)", max_value=residuo, min_value=0.01)
-        if st.button("Registra"):
+        if st.button("Registra Scarico"):
             nuovo = r_dati['Consegnato_€'] + val_scarico
             stato = "Consegnato" if nuovo >= r_dati['Ordinato_€'] else "Parziale"
             
@@ -249,20 +263,20 @@ elif menu == "💰 Pagamenti":
         r_dati = da_inc[da_inc['ID_Ordine'] == id_sel].iloc[0]
         residuo = r_dati['Consegnato_€'] - r_dati['Incassato_€']
         
-        val_inc = st.number_input("Incasso (€)", max_value=residuo, min_value=0.01)
+        val_inc = st.number_input("Incasso Reale (€)", max_value=residuo, min_value=0.01)
         metodo = st.selectbox("Metodo", ["Bonifico", "Assegno", "Contanti", "RiBa"])
-        if st.button("Registra"):
+        if st.button("Registra Pagamento"):
             nuovo = r_dati['Incassato_€'] + val_inc
             execute_query("INSERT INTO Log_Pagamenti VALUES (:id, :d, :i, :m)", {"id": id_sel, "d": str(date.today()), "i": val_inc, "m": metodo})
             execute_query("UPDATE Ordini SET `Incassato_€` = :i WHERE ID_Ordine = :id", {"i": nuovo, "id": id_sel})
-            st.success("Pagato!"); st.rerun()
+            st.success("Pagato e provvigione sbloccata!"); st.rerun()
     else: st.success("Nessun insoluto.")
 
 elif menu == "🏪 Negozi":
     st.title("🏪 Anagrafica Negozi")
     with st.form("f_neg"):
         n, p, c = st.text_input("Ragione Sociale"), st.text_input("P.IVA"), st.text_input("Città")
-        pr, r = st.text_input("Provincia"), st.text_input("Regione")
+        pr, r = st.text_input("Provincia (Es. RM)"), st.text_input("Regione")
         if st.form_submit_button("Aggiungi") and n:
             execute_query("REPLACE INTO Negozi VALUES (:n, :p, :c, :pr, :r)", {"n": n, "p": p, "c": c, "pr": pr, "r": r})
             st.success("Negozio Salvato!"); st.rerun()
@@ -271,19 +285,20 @@ elif menu == "🏪 Negozi":
 elif menu == "🏷️ Brand":
     st.title("🏷️ Gestione Brand")
     with st.form("f_brand"):
-        ib, nb, qa = st.text_input("ID Brand"), st.text_input("Nome Brand"), st.text_input("Quota Agente %")
+        ib, nb = st.text_input("ID Brand"), st.text_input("Nome Brand")
+        qt, qa = st.text_input("Provvigione Totale % (Es. 15%)"), st.text_input("Quota Agente % (Es. 10%)")
         if st.form_submit_button("Salva") and ib:
-            execute_query("REPLACE INTO Brand VALUES (:i, :n, '15%', '0%', :qa)", {"i": ib, "n": nb, "qa": qa})
+            execute_query("REPLACE INTO Brand VALUES (:i, :n, :qt, '0%', :qa)", {"i": ib, "n": nb, "qt": qt, "qa": qa})
             st.success("Brand Salvato!"); st.rerun()
     st.dataframe(load_data("Brand"), use_container_width=True)
 
 elif menu == "👥 Agenti":
     st.title("👥 Gestione Agenti")
     with st.form("f_agente"):
-        aid, anome = st.text_input("ID Agente"), st.text_input("Nome")
-        arole, amail = st.selectbox("Ruolo", ["Agente", "Superadmin"]), st.text_input("Email")
+        aid, anome = st.text_input("ID Agente"), st.text_input("Nome Cognome")
+        arole, amail = st.selectbox("Ruolo", ["Agente", "Superadmin"]), st.text_input("Email per Notifiche")
         apass = st.text_input("Password")
-        if st.form_submit_button("Crea") and aid:
+        if st.form_submit_button("Crea/Modifica") and aid:
             execute_query("REPLACE INTO Agenti VALUES (:i, :n, :r, '', :m, :p)", {"i": aid, "n": anome, "r": arole, "m": amail, "p": apass})
             st.success("Agente Salvato!"); st.rerun()
     st.dataframe(load_data("Agenti"), use_container_width=True)
@@ -293,8 +308,8 @@ elif menu == "🔧 Manutenzione":
     df_o = load_data("Ordini")
     if not df_o.empty:
         target = st.selectbox("Elimina Ordine (Cascade):", df_o['ID_Ordine'].tolist())
-        if st.button("ELIMINA", type="primary"):
+        if st.button("ELIMINA DEFINITIVAMENTE", type="primary"):
             execute_query("DELETE FROM Ordini WHERE ID_Ordine = :id", {"id": target})
             execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
             execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
-            st.success("Eliminato!"); st.rerun()
+            st.success("Eliminato dal database e dai log!"); st.rerun()
