@@ -10,45 +10,58 @@ from datetime import datetime, date
 # --- 1. CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Network 2026 - Cloud DB", layout="wide", page_icon="☁️")
 
-# --- 2. CONNESSIONE MYSQL (SITEGROUND) ---
+# --- 2. CONNESSIONE MYSQL (SITEGROUND) BLINDATA ---
 @st.cache_resource
 def init_connection():
     db = st.secrets["mysql"]
     password_sicura = urllib.parse.quote_plus(db['password'])
     url = f"mysql+pymysql://{db['user']}:{password_sicura}@{db['host']}:{db['port']}/{db['database']}?charset=utf8mb4"
-    return create_engine(url)
+    
+    # FIX: Parametri di "sopravvivenza" per impedire a SiteGround di far cadere la linea
+    return create_engine(
+        url,
+        pool_pre_ping=True,      # Verifica se la connessione è viva prima di usarla
+        pool_recycle=1800,       # Ricicla le connessioni ogni 30 minuti (1800 secondi)
+        pool_timeout=30,         # Attendi fino a 30s per avere una connessione dal pool
+        connect_args={"connect_timeout": 15}  # Evita il drop durante l'handshake iniziale
+    )
 
 engine = init_connection()
 
 def init_db():
-    with engine.begin() as conn:
-        conn.execute(text('''CREATE TABLE IF NOT EXISTS Agenti (
-            ID_Agente VARCHAR(50) PRIMARY KEY, Nome VARCHAR(100), Ruolo VARCHAR(50), 
-            ID_Capoarea VARCHAR(50), Mail_Notifica VARCHAR(100), Password VARCHAR(100))'''))
-                        
-        conn.execute(text('''CREATE TABLE IF NOT EXISTS Negozi (
-            Nome VARCHAR(100) PRIMARY KEY, Partita_IVA VARCHAR(50), Citta VARCHAR(100), 
-            Provincia VARCHAR(10), Regione VARCHAR(50))'''))
-                        
-        conn.execute(text('''CREATE TABLE IF NOT EXISTS Brand (
-            ID_Brand VARCHAR(50) PRIMARY KEY, Nome_Brand VARCHAR(100), Provvigione_Totale_perc VARCHAR(20), 
-            Quota_Capoarea_perc VARCHAR(20), Quota_Agente_perc VARCHAR(20))'''))
-                        
-        conn.execute(text('''CREATE TABLE IF NOT EXISTS Ordini (
-            ID_Ordine VARCHAR(50) PRIMARY KEY, Stagione VARCHAR(50), ID_Agente VARCHAR(50), 
-            ID_Negozio VARCHAR(100), Brand VARCHAR(100), `Ordinato_€` DOUBLE, 
-            `Consegnato_€` DOUBLE, Stato_Incasso VARCHAR(50), `Incassato_€` DOUBLE, Data_Ordine DATE)'''))
-                        
-        conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Consegne (
-            ID_Ordine VARCHAR(50), Data_Consegna DATE, Valore_Consegnato DOUBLE)'''))
-                        
-        conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Pagamenti (
-            ID_Ordine VARCHAR(50), Data DATE, Importo_Pagato DOUBLE, Metodo VARCHAR(50))'''))
+    # Usiamo un blocco try-except per assicurarci che il database risponda
+    try:
+        with engine.begin() as conn:
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Agenti (
+                ID_Agente VARCHAR(50) PRIMARY KEY, Nome VARCHAR(100), Ruolo VARCHAR(50), 
+                ID_Capoarea VARCHAR(50), Mail_Notifica VARCHAR(100), Password VARCHAR(100))'''))
+                            
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Negozi (
+                Nome VARCHAR(100) PRIMARY KEY, Partita_IVA VARCHAR(50), Citta VARCHAR(100), 
+                Provincia VARCHAR(10), Regione VARCHAR(50))'''))
+                            
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Brand (
+                ID_Brand VARCHAR(50) PRIMARY KEY, Nome_Brand VARCHAR(100), Provvigione_Totale_perc VARCHAR(20), 
+                Quota_Capoarea_perc VARCHAR(20), Quota_Agente_perc VARCHAR(20))'''))
+                            
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Ordini (
+                ID_Ordine VARCHAR(50) PRIMARY KEY, Stagione VARCHAR(50), ID_Agente VARCHAR(50), 
+                ID_Negozio VARCHAR(100), Brand VARCHAR(100), `Ordinato_€` DOUBLE, 
+                `Consegnato_€` DOUBLE, Stato_Incasso VARCHAR(50), `Incassato_€` DOUBLE, Data_Ordine DATE)'''))
+                            
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Consegne (
+                ID_Ordine VARCHAR(50), Data_Consegna DATE, Valore_Consegnato DOUBLE)'''))
+                            
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Pagamenti (
+                ID_Ordine VARCHAR(50), Data DATE, Importo_Pagato DOUBLE, Metodo VARCHAR(50))'''))
 
-        res = conn.execute(text("SELECT COUNT(*) FROM Agenti")).scalar()
-        if res == 0:
-            conn.execute(text("INSERT INTO Agenti VALUES (:id, :n, :r, :c, :m, :p)"), 
-                         {"id": 'ADMIN-01', "n": 'Admin', "r": 'Superadmin', "c": '', "m": 'tua@email.it', "p": 'admin123'})
+            res = conn.execute(text("SELECT COUNT(*) FROM Agenti")).scalar()
+            if res == 0:
+                conn.execute(text("INSERT INTO Agenti VALUES (:id, :n, :r, :c, :m, :p)"), 
+                             {"id": 'ADMIN-01', "n": 'Admin', "r": 'Superadmin', "c": '', "m": 'tua@email.it', "p": 'admin123'})
+    except Exception as e:
+        st.error("Errore di inizializzazione DB. Il server ha chiuso la connessione.")
+        st.stop()
 
 init_db()
 
@@ -97,7 +110,7 @@ if not st.session_state.auth:
                 if not user.empty:
                     st.session_state.update({"auth": True, "user": user.iloc[0].to_dict()})
                     st.rerun()
-                else: st.error("❌ Credenziali errate.")
+                else: st.error("❌ Credenziali errate. Usa 'Admin' / 'admin123' al primo avvio.")
     st.stop()
 
 # --- 6. NAVIGAZIONE ---
@@ -129,38 +142,30 @@ if menu == "📊 Dashboard BI":
     if df_o.empty:
         st.info("Nessun ordine nel Database.")
     else:
-        # MERGE DEI DATI
         df = pd.merge(df_o, df_n, left_on='ID_Negozio', right_on='Nome', how='left')
         df = pd.merge(df, df_a[['ID_Agente', 'Nome', 'Ruolo']], on='ID_Agente', suffixes=('', '_Agente'), how='left')
         
-        # PULIZIA PERCENTUALI BRAND
         def p2f(x): return float(str(x).replace('%','').replace(',','.')) / 100 if pd.notnull(x) and x != '' else 0.0
         df_b['rate_totale'] = df_b['Provvigione_Totale_perc'].apply(p2f)
         df_b['rate_agente'] = df_b['Quota_Agente_perc'].apply(p2f)
         
         df = pd.merge(df, df_b[['Nome_Brand', 'rate_totale', 'rate_agente']], left_on='Brand', right_on='Nome_Brand', how='left')
         
-        # --- FIX: CALCOLO DELLE PROVVIGIONI SPLITTATE ---
-        
-        # 1. Quanto spetta all'Agente (0 se l'ordine è del Superadmin)
+        # LOGICA PROVVIGIONI VENDITA DIRETTA VS OVERRIDE RETE
         df['Provv_Agente_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
         df['Provv_Agente_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
         
-        # 2. Quanto spetta al Superadmin (Totale se ordine suo, Differenza se ordine Agente)
         df['Provv_Admin_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Consegnato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
         df['Provv_Admin_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Incassato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
         
-        # ASSEGNAZIONE VISTA CORRENTE
         if ROLE == "Superadmin":
             df['Mio_Maturato'] = df['Provv_Admin_Maturata']
             df['Mio_Esigibile'] = df['Provv_Admin_Esigibile']
         else:
-            # Se è un agente, vede solo i suoi ordini
             df = df[df['ID_Agente'] == str(U['ID_Agente'])]
             df['Mio_Maturato'] = df['Provv_Agente_Maturata']
             df['Mio_Esigibile'] = df['Provv_Agente_Esigibile']
 
-        # FILTRI DINAMICI
         st.markdown("### 🔍 Filtri Dinamici")
         f1, f2, f3 = st.columns(3)
         with f1:
@@ -184,7 +189,6 @@ if menu == "📊 Dashboard BI":
         
         df_filtered = df[mask]
 
-        # KPI
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Ordini (Q.tà)", len(df_filtered))
         c2.metric("Fatturato Lordo (€)", f"{df_filtered['Ordinato_€'].sum():,.2f} €")
