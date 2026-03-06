@@ -17,19 +17,17 @@ def init_connection():
     password_sicura = urllib.parse.quote_plus(db['password'])
     url = f"mysql+pymysql://{db['user']}:{password_sicura}@{db['host']}:{db['port']}/{db['database']}?charset=utf8mb4"
     
-    # FIX: Parametri di "sopravvivenza" per impedire a SiteGround di far cadere la linea
     return create_engine(
         url,
-        pool_pre_ping=True,      # Verifica se la connessione è viva prima di usarla
-        pool_recycle=1800,       # Ricicla le connessioni ogni 30 minuti (1800 secondi)
-        pool_timeout=30,         # Attendi fino a 30s per avere una connessione dal pool
-        connect_args={"connect_timeout": 15}  # Evita il drop durante l'handshake iniziale
+        pool_pre_ping=True,
+        pool_recycle=1800,
+        pool_timeout=30,
+        connect_args={"connect_timeout": 15}
     )
 
 engine = init_connection()
 
 def init_db():
-    # Usiamo un blocco try-except per assicurarci che il database risponda
     try:
         with engine.begin() as conn:
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Agenti (
@@ -60,7 +58,7 @@ def init_db():
                 conn.execute(text("INSERT INTO Agenti VALUES (:id, :n, :r, :c, :m, :p)"), 
                              {"id": 'ADMIN-01', "n": 'Admin', "r": 'Superadmin', "c": '', "m": 'tua@email.it', "p": 'admin123'})
     except Exception as e:
-        st.error("Errore di inizializzazione DB. Il server ha chiuso la connessione.")
+        st.error("Errore di inizializzazione DB. Controlla i Secrets e l'Accesso Remoto su SiteGround.")
         st.stop()
 
 init_db()
@@ -151,7 +149,6 @@ if menu == "📊 Dashboard BI":
         
         df = pd.merge(df, df_b[['Nome_Brand', 'rate_totale', 'rate_agente']], left_on='Brand', right_on='Nome_Brand', how='left')
         
-        # LOGICA PROVVIGIONI VENDITA DIRETTA VS OVERRIDE RETE
         df['Provv_Agente_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
         df['Provv_Agente_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
         
@@ -298,14 +295,36 @@ elif menu == "🏷️ Brand":
 
 elif menu == "👥 Agenti":
     st.title("👥 Gestione Agenti")
-    with st.form("f_agente"):
-        aid, anome = st.text_input("ID Agente"), st.text_input("Nome Cognome")
-        arole, amail = st.selectbox("Ruolo", ["Agente", "Superadmin"]), st.text_input("Email per Notifiche")
-        apass = st.text_input("Password")
-        if st.form_submit_button("Crea/Modifica") and aid:
-            execute_query("REPLACE INTO Agenti VALUES (:i, :n, :r, '', :m, :p)", {"i": aid, "n": anome, "r": arole, "m": amail, "p": apass})
-            st.success("Agente Salvato!"); st.rerun()
-    st.dataframe(load_data("Agenti"), use_container_width=True)
+    df_a = load_data("Agenti")
+    
+    tab1, tab2 = st.tabs(["➕ Crea o Modifica", "❌ Elimina"])
+    
+    with tab1:
+        st.write("Inserisci un nuovo ID per creare un agente, oppure l'ID di un agente esistente per aggiornarne i dati.")
+        with st.form("f_agente", clear_on_submit=True):
+            aid, anome = st.text_input("ID Agente (Es. AG-01)"), st.text_input("Nome Cognome")
+            arole, amail = st.selectbox("Ruolo", ["Agente", "Superadmin"]), st.text_input("Email per Notifiche")
+            apass = st.text_input("Password")
+            if st.form_submit_button("Salva Agente") and aid:
+                execute_query("REPLACE INTO Agenti VALUES (:i, :n, :r, '', :m, :p)", {"i": aid, "n": anome, "r": arole, "m": amail, "p": apass})
+                st.success(f"Dati di {aid} salvati correttamente!"); st.rerun()
+                
+    with tab2:
+        if not df_a.empty:
+            # Rimuoviamo noi stessi dalla lista per evitare l'auto-cancellazione
+            agenti_eliminabili = df_a[df_a['ID_Agente'] != U['ID_Agente']]['ID_Agente'].tolist()
+            if agenti_eliminabili:
+                target_agente = st.selectbox("Seleziona Agente da licenziare/eliminare:", agenti_eliminabili)
+                st.warning("⚠️ L'eliminazione impedirà all'agente di accedere. I suoi ordini passati rimarranno nel database a fini contabili.")
+                if st.button("ELIMINA AGENTE DEFINITIVAMENTE", type="primary"):
+                    execute_query("DELETE FROM Agenti WHERE ID_Agente = :id", {"id": target_agente})
+                    st.success("Agente rimosso dal sistema."); st.rerun()
+            else:
+                st.info("Sei l'unico utente registrato nel sistema. Non è possibile auto-eliminarsi.")
+
+    st.divider()
+    st.subheader("Elenco Rete Vendita")
+    st.dataframe(df_a, use_container_width=True)
 
 elif menu == "🔧 Manutenzione":
     st.title("🔧 Database Core")
