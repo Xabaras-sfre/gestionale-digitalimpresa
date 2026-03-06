@@ -149,6 +149,10 @@ if menu == "📊 Dashboard BI":
         
         df = pd.merge(df, df_b[['Nome_Brand', 'rate_totale', 'rate_agente']], left_on='Brand', right_on='Nome_Brand', how='left')
         
+        # Estrazione Anno e Trimestre per i nuovi filtri
+        df['Anno'] = df['Data_Ordine'].dt.year
+        df['Trimestre'] = df['Data_Ordine'].dt.quarter
+        
         df['Provv_Agente_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
         df['Provv_Agente_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_agente'] if r['Ruolo'] != 'Superadmin' else 0, axis=1)
         
@@ -164,25 +168,39 @@ if menu == "📊 Dashboard BI":
             df['Mio_Esigibile'] = df['Provv_Agente_Esigibile']
 
         st.markdown("### 🔍 Filtri Dinamici")
-        f1, f2, f3 = st.columns(3)
+        # Ho allargato a 5 colonne per far spazio ad Anno e Trimestre
+        f1, f2, f3, f4, f5 = st.columns(5)
+        
         with f1:
             date_valide = df['Data_Ordine'].dropna()
             min_d = date_valide.min().date() if not date_valide.empty else date(2026,1,1)
             max_d = date_valide.max().date() if not date_valide.empty else date.today()
-            date_filter = st.date_input("Periodo", [min_d, max_d])
+            date_filter = st.date_input("Periodo Specifico", [min_d, max_d])
         with f2:
-            brand_filter = st.multiselect("Brand", df['Brand'].dropna().unique())
+            anni_disponibili = sorted(df['Anno'].dropna().unique().astype(int).tolist())
+            anno_filter = st.multiselect("Anno", anni_disponibili)
         with f3:
+            trimestre_filter = st.multiselect("Trimestre", [1, 2, 3, 4], format_func=lambda x: f"Q{x}")
+        with f4:
+            brand_filter = st.multiselect("Brand", df['Brand'].dropna().unique())
+        with f5:
             if ROLE == "Superadmin":
                 agente_filter = st.multiselect("Agente", df['Nome_Agente'].dropna().unique())
             else:
                 agente_filter = []
 
+        # Applicazione combinata di tutti i filtri
         mask = pd.Series(True, index=df.index)
         if len(date_filter) == 2:
             mask &= (df['Data_Ordine'] >= pd.to_datetime(date_filter[0])) & (df['Data_Ordine'] <= pd.to_datetime(date_filter[1]))
-        if brand_filter: mask &= df['Brand'].isin(brand_filter)
-        if ROLE == "Superadmin" and agente_filter: mask &= df['Nome_Agente'].isin(agente_filter)
+        if anno_filter:
+            mask &= df['Anno'].isin(anno_filter)
+        if trimestre_filter:
+            mask &= df['Trimestre'].isin(trimestre_filter)
+        if brand_filter: 
+            mask &= df['Brand'].isin(brand_filter)
+        if ROLE == "Superadmin" and agente_filter: 
+            mask &= df['Nome_Agente'].isin(agente_filter)
         
         df_filtered = df[mask]
 
@@ -193,16 +211,46 @@ if menu == "📊 Dashboard BI":
         c4.metric("Mio Esigibile (€)", f"{df_filtered['Mio_Esigibile'].sum():,.2f} €")
 
         st.divider()
-        tab1, tab2, tab3 = st.tabs(["Geografia", "Performance Brand", "Rete Vendita"])
-        with tab1:
-            if 'Regione' in df_filtered.columns: st.bar_chart(df_filtered.groupby('Regione')['Ordinato_€'].sum())
-        with tab2:
+        
+        tab_geo, tab_neg, tab_brand, tab_rete = st.tabs(["🌍 Geografia", "🏪 Negozi", "🏷️ Performance Brand", "👥 Rete Vendita"])
+        
+        with tab_geo:
+            col_reg, col_prov, col_cit = st.columns(3)
+            with col_reg:
+                st.write("**Per Regione**")
+                if 'Regione' in df_filtered.columns:
+                    st.dataframe(df_filtered.groupby('Regione').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+            with col_prov:
+                st.write("**Per Provincia**")
+                if 'Provincia' in df_filtered.columns:
+                    st.dataframe(df_filtered.groupby('Provincia').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+            with col_cit:
+                st.write("**Per Città (Top 15)**")
+                if 'Citta' in df_filtered.columns:
+                    st.dataframe(df_filtered.groupby('Citta').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False).head(15), use_container_width=True)
+
+        with tab_neg:
+            st.subheader("Performance Dettagliata per Negozio")
+            if 'ID_Negozio' in df_filtered.columns:
+                df_negozi_stats = df_filtered.groupby('ID_Negozio').agg({
+                    'ID_Ordine':'count', 
+                    'Ordinato_€':'sum', 
+                    'Consegnato_€':'sum',
+                    'Mio_Maturato':'sum',
+                    'Mio_Esigibile':'sum'
+                }).sort_values('Ordinato_€', ascending=False)
+                st.dataframe(df_negozi_stats, use_container_width=True)
+                
+        with tab_brand:
+            st.subheader("Incidenza dei Marchi")
             st.dataframe(df_filtered.groupby('Brand').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
-        with tab3:
+            
+        with tab_rete:
             if ROLE == "Superadmin":
+                st.subheader("Classifica Agenti")
                 st.dataframe(df_filtered.groupby('Nome_Agente').agg({'Ordinato_€':'sum', 'Consegnato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
             else:
-                st.info("I dati aggregati della rete sono visibili solo alla direzione.")
+                st.info("I dati aggregati dell'intera rete commerciale sono visibili solo alla direzione.")
 
 elif menu == "📝 Nuovo Ordine":
     st.title("📝 Registra Ordine")
@@ -311,7 +359,6 @@ elif menu == "👥 Agenti":
                 
     with tab2:
         if not df_a.empty:
-            # Rimuoviamo noi stessi dalla lista per evitare l'auto-cancellazione
             agenti_eliminabili = df_a[df_a['ID_Agente'] != U['ID_Agente']]['ID_Agente'].tolist()
             if agenti_eliminabili:
                 target_agente = st.selectbox("Seleziona Agente da licenziare/eliminare:", agenti_eliminabili)
