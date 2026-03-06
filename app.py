@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
+import urllib.parse  # <--- NUOVA LIBRERIA PER IL FIX DELLA PASSWORD
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -9,12 +10,16 @@ from datetime import datetime, date
 # --- 1. CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Network 2026 - Cloud DB", layout="wide", page_icon="☁️")
 
-# --- 2. CONNESSIONE MYSQL (SITEGROUND) ---
+# --- 2. CONNESSIONE MYSQL (SITEGROUND) CON FIX PASSWORD ---
 @st.cache_resource
 def init_connection():
     db = st.secrets["mysql"]
+    
+    # FIX: Codifichiamo la password per evitare che simboli come @ o # rompano l'URL
+    password_sicura = urllib.parse.quote_plus(db['password'])
+    
     # Stringa di connessione professionale per MySQL
-    url = f"mysql+pymysql://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['database']}?charset=utf8mb4"
+    url = f"mysql+pymysql://{db['user']}:{password_sicura}@{db['host']}:{db['port']}/{db['database']}?charset=utf8mb4"
     return create_engine(url)
 
 engine = init_connection()
