@@ -51,10 +51,28 @@ def init_db():
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Consegne (ID_Ordine VARCHAR(50), Data_Consegna DATE, Valore_Consegnato DOUBLE)'''))
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Pagamenti (ID_Ordine VARCHAR(50), Data DATE, Importo_Pagato DOUBLE, Metodo VARCHAR(50))'''))
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Liquidazioni (ID_Liq VARCHAR(50) PRIMARY KEY, Data DATE, Beneficiario VARCHAR(50), Ruolo VARCHAR(50), Importo DOUBLE, Note VARCHAR(200))'''))
+            
+            # NUOVA TABELLA: Stagioni Dinamiche
+            conn.execute(text('''CREATE TABLE IF NOT EXISTS Stagioni (Nome_Stagione VARCHAR(100) PRIMARY KEY, Ordinamento INT)'''))
 
+            # Creazione Admin di Default
             res = conn.execute(text("SELECT COUNT(*) FROM Agenti")).scalar()
             if res == 0:
                 conn.execute(text("INSERT INTO Agenti VALUES (:id, :n, :r, :c, :m, :p)"), {"id": 'ADMIN-01', "n": 'Admin', "r": 'Superadmin', "c": '', "m": 'tua@email.it', "p": 'admin123'})
+            
+            # Popolamento Stagioni di Default (se la tabella è vuota)
+            res_stag = conn.execute(text("SELECT COUNT(*) FROM Stagioni")).scalar()
+            if res_stag == 0:
+                default_seasons = [
+                    ("Autunno/Inverno 24/25 (FW)", 1),
+                    ("Primavera/Estate 25 (SS)", 2),
+                    ("Autunno/Inverno 25/26 (FW)", 3),
+                    ("Primavera/Estate 26 (SS)", 4),
+                    ("Autunno/Inverno 26/27 (FW)", 5)
+                ]
+                for s, o in default_seasons:
+                    conn.execute(text("INSERT INTO Stagioni VALUES (:n, :o)"), {"n": s, "o": o})
+
     except Exception:
         st.error("Errore di connessione. Controlla i secrets e l'IP su SiteGround.")
         st.stop()
@@ -131,7 +149,8 @@ if not df_ordini.empty:
 
 menu_list = ["📊 Dashboard BI", "📝 Nuovo Ordine"]
 if ROLE == "Superadmin":
-    menu_list += ["🚚 Consegne", "💰 Incassi & Fatture", "💸 Erogazione Provvigioni", "🏪 Negozi", "🏷️ Brand", "👥 Agenti", "🔧 Manutenzione"]
+    # Modificato il nome del menu Brand in "Brand e Stagioni"
+    menu_list += ["🚚 Consegne", "💰 Incassi & Fatture", "💸 Erogazione Provvigioni", "🏪 Negozi", "🏷️ Brand e Stagioni", "👥 Agenti", "🔧 Manutenzione"]
 
 menu = st.sidebar.radio("Menu Navigazione", menu_list)
 
@@ -168,7 +187,6 @@ if menu == "📊 Dashboard BI":
         df['Provv_Admin_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Consegnato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
         df['Provv_Admin_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Incassato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
         
-        # FIX: Riapplicate le colonne al dataframe per permettere i calcoli nei grafici
         if ROLE != "Superadmin":
             df = df[df['ID_Agente'] == str(U['ID_Agente'])]
             df['Mio_Maturato'] = df['Provv_Agente_Maturata']
@@ -226,7 +244,7 @@ if menu == "📊 Dashboard BI":
 
         with tab_produttore:
             st.markdown("#### Ordinato per Produttore / Azienda")
-            st.caption("Visualizza i totali raccolti divisi per Brand e Stagione (Replica del Report Azienda PDF)")
+            st.caption("Visualizza i totali raccolti divisi per Brand e Stagione")
             if not df_filtered.empty:
                 df_prod = df_filtered.groupby(['Brand', 'Stagione']).agg({
                     'ID_Ordine': 'count',
@@ -265,6 +283,10 @@ elif menu == "📝 Nuovo Ordine":
     st.markdown("## 📝 Registra Nuovo Ordine")
     df_n, df_b, df_a = load_data("Negozi"), load_data("Brand"), load_data("Agenti")
     
+    # FETCH DINAMICO DELLE STAGIONI DAL DATABASE
+    df_s = load_data("Stagioni").sort_values('Ordinamento')
+    lista_stagioni = df_s['Nome_Stagione'].tolist() if not df_s.empty else ["Nessuna stagione configurata"]
+    
     with st.form("form_ordine", clear_on_submit=True):
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -272,7 +294,7 @@ elif menu == "📝 Nuovo Ordine":
             neg = st.selectbox("Seleziona Negozio", df_n['Nome'].tolist() if not df_n.empty else [])
         with c2:
             brand = st.selectbox("Seleziona Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else [])
-            stagione = st.selectbox("Seleziona Stagione", ["Autunno/Inverno 24/25 (FW)", "Primavera/Estate 25 (SS)", "Autunno/Inverno 25/26 (FW)", "Primavera/Estate 26 (SS)", "Autunno/Inverno 26/27 (FW)"])
+            stagione = st.selectbox("Seleziona Stagione", lista_stagioni)
         with c3:
             val = st.number_input("Valore Lordo Ordine (€)", min_value=0.0)
             agente_id = st.selectbox("Assegnato a:", df_a['ID_Agente'].tolist()) if ROLE == "Superadmin" else U['ID_Agente']
@@ -386,16 +408,44 @@ elif menu == "🏪 Negozi":
             st.success("Salvato!"); st.rerun()
     st.dataframe(load_data("Negozi"), use_container_width=True)
 
-elif menu == "🏷️ Brand":
-    st.markdown("## 🏷️ Gestione Brand")
-    with st.form("f_brand", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1: ib, nb = st.text_input("ID Brand"), st.text_input("Nome Commerciale")
-        with c2: qt, qa = st.text_input("Provvigione Totale %"), st.text_input("Quota Agente %")
-        if st.form_submit_button("Salva Configurazione", type="primary") and ib:
-            execute_query("REPLACE INTO Brand VALUES (:i, :n, :qt, '0%', :qa)", {"i": ib, "n": nb, "qt": qt, "qa": qa})
-            st.success("Salvato!"); st.rerun()
-    st.dataframe(load_data("Brand"), use_container_width=True)
+elif menu == "🏷️ Brand e Stagioni":
+    st.markdown("## 🏷️ Gestione Configurazione Software")
+    
+    tab_brand, tab_stagioni = st.tabs(["🏢 Portafoglio Brand", "📅 Calendario Stagioni"])
+    
+    with tab_brand:
+        st.markdown("#### Aggiungi o Modifica Brand")
+        with st.form("f_brand", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            with c1: ib, nb = st.text_input("ID Brand"), st.text_input("Nome Commerciale")
+            with c2: qt, qa = st.text_input("Provvigione Totale %"), st.text_input("Quota Agente %")
+            if st.form_submit_button("Salva Configurazione Brand", type="primary") and ib:
+                execute_query("REPLACE INTO Brand VALUES (:i, :n, :qt, '0%', :qa)", {"i": ib, "n": nb, "qt": qt, "qa": qa})
+                st.success("Brand Salvato!"); st.rerun()
+        st.dataframe(load_data("Brand"), use_container_width=True)
+        
+    with tab_stagioni:
+        st.markdown("#### Aggiungi Nuova Stagione")
+        st.caption("Crea nuove stagioni per le campagne vendite. L'ordinamento decide la priorità di visualizzazione nel menu a tendina.")
+        with st.form("f_stagione", clear_on_submit=True):
+            c1, c2 = st.columns([3, 1])
+            with c1: n_stag = st.text_input("Nome Stagione (Es. Primavera/Estate 28 (SS))")
+            with c2: ord_stag = st.number_input("Ordinamento", min_value=1, value=10)
+            
+            if st.form_submit_button("Salva Nuova Stagione", type="primary") and n_stag:
+                execute_query("REPLACE INTO Stagioni VALUES (:n, :o)", {"n": n_stag, "o": ord_stag})
+                st.success("Stagione creata e resa disponibile per i nuovi ordini!"); st.rerun()
+                
+        st.markdown("<br>#### Elenco Stagioni Attive", unsafe_allow_html=True)
+        df_s = load_data("Stagioni").sort_values('Ordinamento')
+        st.dataframe(df_s, use_container_width=True)
+        
+        if not df_s.empty:
+            st.markdown("#### Eliminazione Stagione")
+            del_stag = st.selectbox("Seleziona Stagione da rimuovere:", df_s['Nome_Stagione'].tolist())
+            if st.button("Elimina Definitivamente", type="primary"):
+                execute_query("DELETE FROM Stagioni WHERE Nome_Stagione = :n", {"n": del_stag})
+                st.success("Stagione rimossa dal database."); st.rerun()
 
 elif menu == "👥 Agenti":
     st.markdown("## 👥 Gestione Rete Commerciale")
