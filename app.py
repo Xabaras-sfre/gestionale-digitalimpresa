@@ -8,137 +8,155 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, date, timedelta
 import time
 
-# --- 1. CONFIGURAZIONE PAGINA E DESIGN ---
-st.set_page_config(page_title="Network 2026", layout="wide", page_icon="👔")
+# --- 1. CONFIGURAZIONE PAGINA E DESIGN PREMIUM ---
+st.set_page_config(page_title="Network 2026", layout="wide", page_icon="👔", initial_sidebar_state="expanded")
 
 def inject_custom_css():
     st.markdown("""
         <style>
-        /* 1. TYPOGRAPHY: Importa il font Inter (altamente leggibile) */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        /* FONT IMPORT */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
-        /* 2. VARIABILI COLORE ACCESSIBILI (Palette WCAG Compliant) */
-        :root {
-            --primary: #1D4ED8;        /* Blu Enterprise - Alto contrasto */
-            --primary-hover: #1E3A8A;  /* Blu scuro per hover */
-            --text-main: #0F172A;      /* Grigio Ardesia Scuro (non nero puro, riposante) */
-            --text-muted: #475569;     /* Grigio testo secondario leggibile */
-            --bg-main: #F8FAFC;        /* Sfondo app grigio chiarissimo */
-            --bg-card: #FFFFFF;        /* Sfondo bianco puro per le card */
-            --focus-ring: #3B82F6;     /* Azzurro per l'anello di focus da tastiera */
+        /* 1. RESET GLOBALE E SFONDO APP */
+        html, body, [class*="css"] { 
+            font-family: 'Plus Jakarta Sans', sans-serif !important; 
         }
-        
-        /* Applica font e colori di base */
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-main);
-            background-color: var(--bg-main);
-        }
-        
-        /* 3. ACCESSIBILITÀ: Focus visibile per navigazione da tastiera */
-        *:focus-visible {
-            outline: 3px solid var(--focus-ring) !important;
-            outline-offset: 2px !important;
-            border-radius: 4px;
+        .stApp {
+            background-color: #F3F6F9 !important; /* Grigio perla elegante per staccare le card bianche */
         }
 
-        /* 4. METRICHE (KPI CARDS) - Design moderno a schede */
+        /* 2. SIDEBAR PREMIUM (DARK NAV) */
+        [data-testid="stSidebar"] {
+            background-color: #0B1120 !important; /* Blu notte profondissimo */
+            border-right: none !important;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        [data-testid="stSidebar"] * {
+            color: #E2E8F0 !important; /* Testo chiaro sulla sidebar */
+        }
+        [data-testid="stSidebar"] .stRadio > div {
+            gap: 0.5rem;
+        }
+        [data-testid="stSidebar"] .stRadio label {
+            background-color: rgba(255,255,255,0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        [data-testid="stSidebar"] .stRadio label:hover {
+            background-color: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        [data-testid="stSidebar"] .stRadio div[role="radio"][aria-checked="true"] + div {
+            color: #38BDF8 !important; /* Azzurro neon per la voce selezionata */
+            font-weight: 700;
+        }
+
+        /* 3. CARD DESIGN PER FORM E CONTENITORI (SEZIONI BEN DEFINITE) */
+        [data-testid="stForm"], .stExpander {
+            background-color: #FFFFFF !important;
+            border-radius: 16px !important;
+            padding: 24px !important;
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+            transition: all 0.3s ease !important;
+        }
+        [data-testid="stForm"]:hover, .stExpander:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+            transform: translateY(-2px);
+        }
+
+        /* 4. METRICHE (KPI) IN ALTO */
         [data-testid="stMetric"] {
-            background-color: var(--bg-card);
-            padding: 1.5rem !important;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            padding: 20px !important;
             border-radius: 16px;
             border: 1px solid #E2E8F0;
-            border-top: 6px solid var(--primary); /* Linea colorata superiore */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-left: 6px solid #2563EB;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        /* Effetto sollevamento al passaggio del mouse */
         [data-testid="stMetric"]:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-top: 6px solid #3B82F6;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+            border-left: 6px solid #38BDF8;
         }
-        /* Numeri delle metriche più grandi e leggibili */
+        [data-testid="stMetricLabel"] {
+            font-weight: 600;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
         [data-testid="stMetricValue"] {
-            color: var(--text-main);
+            color: #0F172A;
             font-weight: 800;
             font-size: 2.2rem;
-            letter-spacing: -0.05em;
-        }
-        
-        /* 5. BOTTONI - Stile "Pillola" e Touch Targets ampi */
-        div.stButton > button {
-            border-radius: 8px;
-            font-weight: 600;
-            min-height: 46px; /* Touch target accessibile (min 44px) */
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid #CBD5E1;
-        }
-        /* Bottone Azione Principale (Primary) */
-        div.stButton > button[kind="primary"] {
-            background-color: var(--primary);
-            color: #FFFFFF;
-            border: none;
-            box-shadow: 0 4px 6px -1px rgba(29, 78, 216, 0.3);
-        }
-        div.stButton > button[kind="primary"]:hover {
-            background-color: var(--primary-hover);
-            box-shadow: 0 6px 8px -1px rgba(30, 58, 138, 0.4);
-            transform: translateY(-1px);
         }
 
-        /* 6. CAMPI DI INPUT E FORM - Bordi definiti e chiari */
+        /* 5. ELIMINAZIONE DEL ROSSO SUI PULSANTI (PULSANTI GRADIENTE) */
+        div[data-testid="stFormSubmitButton"] > button,
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+            color: #FFFFFF !important;
+            border: none !important;
+            border-radius: 10px !important;
+            font-weight: 700 !important;
+            padding: 0.6rem 1.5rem !important;
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39) !important;
+            transition: all 0.3s ease !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        div[data-testid="stFormSubmitButton"] > button:hover,
+        .stButton > button[kind="primary"]:hover {
+            transform: translateY(-3px) !important;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5) !important;
+            background: linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%) !important;
+        }
+
+        /* 6. CAMPI DI TESTO E MENU A TENDINA */
         .stTextInput>div>div>input, 
         .stSelectbox>div>div>div, 
         .stDateInput>div>div>input, 
         .stNumberInput>div>div>input {
-            border-radius: 8px;
-            border: 2px solid #E2E8F0;
-            padding: 0.6rem 1rem;
-            font-size: 1rem;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background-color: #F8FAFC !important;
+            border-radius: 10px !important;
+            border: 1px solid #CBD5E1 !important;
+            padding: 0.7rem 1rem !important;
+            color: #0F172A !important;
+            transition: all 0.2s ease;
         }
-        /* Effetto Focus sui campi di testo */
         .stTextInput>div>div>input:focus, 
         .stSelectbox>div>div>div:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            background-color: #FFFFFF !important;
+            border-color: #2563EB !important;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
         }
 
-        /* 7. MENU LATERALE (SIDEBAR) - Contrasto visivo */
-        [data-testid="stSidebar"] {
-            background-color: #F1F5F9;
-            border-right: 1px solid #E2E8F0;
-        }
-        
-        /* 8. TABS (Schede di navigazione) - Indicatori chiari */
-        [data-testid="stTabs"] button {
-            font-weight: 600;
-            color: var(--text-muted);
-            font-size: 1.05rem;
-            padding-bottom: 1rem;
-        }
-        /* Tab Attivo */
-        [data-testid="stTabs"] button[aria-selected="true"] {
-            color: var(--primary);
-            border-bottom: 3px solid var(--primary);
-        }
-
-        /* 9. MESSAGGI DI ALERT (Successo, Errore) */
-        [data-testid="stAlert"] {
+        /* 7. TABELLA (DATAFRAME) STYLING */
+        [data-testid="stDataFrame"] {
             border-radius: 12px;
-            border-left-width: 8px; /* Bordo colorato molto spesso per daltonici */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+            border: 1px solid #E2E8F0;
         }
         
-        /* Titoli generali */
-        h1, h2, h3 {
+        /* TITOLI */
+        h1, h2 {
+            color: #0F172A !important;
             font-weight: 800 !important;
-            letter-spacing: -0.02em;
-            color: var(--text-main);
+            letter-spacing: -1px;
+        }
+        h3, h4 {
+            color: #1E293B !important;
+            font-weight: 700 !important;
         }
         </style>
     """, unsafe_allow_html=True)
+
+inject_custom_css()
 
 # --- 2. CONNESSIONE MYSQL (SITEGROUND) ---
 @st.cache_resource
@@ -160,25 +178,15 @@ def init_db():
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Consegne (ID_Ordine VARCHAR(50), Data_Consegna DATE, Valore_Consegnato DOUBLE)'''))
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Log_Pagamenti (ID_Ordine VARCHAR(50), Data DATE, Importo_Pagato DOUBLE, Metodo VARCHAR(50))'''))
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Liquidazioni (ID_Liq VARCHAR(50) PRIMARY KEY, Data DATE, Beneficiario VARCHAR(50), Ruolo VARCHAR(50), Importo DOUBLE, Note VARCHAR(200))'''))
-            
-            # NUOVA TABELLA: Stagioni Dinamiche
             conn.execute(text('''CREATE TABLE IF NOT EXISTS Stagioni (Nome_Stagione VARCHAR(100) PRIMARY KEY, Ordinamento INT)'''))
 
-            # Creazione Admin di Default
             res = conn.execute(text("SELECT COUNT(*) FROM Agenti")).scalar()
             if res == 0:
                 conn.execute(text("INSERT INTO Agenti VALUES (:id, :n, :r, :c, :m, :p)"), {"id": 'ADMIN-01', "n": 'Admin', "r": 'Superadmin', "c": '', "m": 'tua@email.it', "p": 'admin123'})
             
-            # Popolamento Stagioni di Default (se la tabella è vuota)
             res_stag = conn.execute(text("SELECT COUNT(*) FROM Stagioni")).scalar()
             if res_stag == 0:
-                default_seasons = [
-                    ("Autunno/Inverno 24/25 (FW)", 1),
-                    ("Primavera/Estate 25 (SS)", 2),
-                    ("Autunno/Inverno 25/26 (FW)", 3),
-                    ("Primavera/Estate 26 (SS)", 4),
-                    ("Autunno/Inverno 26/27 (FW)", 5)
-                ]
+                default_seasons = [("Autunno/Inverno 24/25 (FW)", 1), ("Primavera/Estate 25 (SS)", 2), ("Autunno/Inverno 25/26 (FW)", 3), ("Primavera/Estate 26 (SS)", 4), ("Autunno/Inverno 26/27 (FW)", 5)]
                 for s, o in default_seasons:
                     conn.execute(text("INSERT INTO Stagioni VALUES (:n, :o)"), {"n": s, "o": o})
 
@@ -218,13 +226,15 @@ def execute_query(query, params=None):
 if "auth" not in st.session_state: st.session_state.update({"auth": False, "user": None})
 
 if not st.session_state.auth:
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
-        st.markdown("<h2 style='text-align: center; color: #0068c9;'>Area Riservata Rete Vendita</h2>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: #0F172A !important;'>Corporate Login</h1>", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=True):
-            u = st.text_input("Nome Utente", placeholder="Es. Mario Rossi")
+            st.markdown("<p style='text-align: center; color: #64748B;'>Inserisci le credenziali per accedere all'ERP 2026</p>", unsafe_allow_html=True)
+            u = st.text_input("Username", placeholder="ID Agente o Nome")
             p = st.text_input("Password", type="password", placeholder="••••••••")
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("Accedi al Sistema", type="primary", use_container_width=True):
                 df_a = load_data("Agenti")
                 user = df_a[(df_a['Nome'] == u) & (df_a['Password'] == p)]
@@ -238,8 +248,9 @@ if not st.session_state.auth:
 U = st.session_state.user
 ROLE = U['Ruolo']
 
-st.sidebar.markdown(f"### 👤 Ciao, **{U['Nome']}**")
-st.sidebar.caption(f"🛡️ Livello Accesso: `{ROLE}`")
+# Decorazione della sidebar
+st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='color: white !important; margin-bottom:0;'>NETWORK<br><span style='color:#38BDF8;'>2026</span></h2></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"👤 Ciao, **{U['Nome']}**<br>🛡️ Livello: `{ROLE}`", unsafe_allow_html=True)
 st.sidebar.divider()
 
 df_ordini = load_data("Ordini")
@@ -249,27 +260,28 @@ if not df_ordini.empty:
     scadenze = scadenze[scadenze['Data_Scadenza'] <= oggi + pd.Timedelta(days=7)]
     
     if not scadenze.empty:
-        st.sidebar.markdown("🚨 **ATTENZIONE SCADENZE**")
+        st.sidebar.markdown("<p style='color:#EF4444; font-weight:bold;'>🚨 ALERT SCADENZE</p>", unsafe_allow_html=True)
         for _, row in scadenze.iterrows():
             giorni = (row['Data_Scadenza'] - oggi).days
             msg = f"Scaduta da {abs(giorni)} gg!" if giorni < 0 else "Scade OGGI!" if giorni == 0 else f"Scade tra {giorni} gg"
-            st.sidebar.error(f"**{row['Metodo_Pagamento']}** - {row['ID_Negozio']}\n\nFattura: {row.get('Numero_Fattura', 'N/D')}\n\n{msg}")
+            st.sidebar.error(f"**{row['Metodo_Pagamento']}**\n\nNegozio: {row['ID_Negozio']}\n\nFattura: {row.get('Numero_Fattura', 'N/D')}\n\n{msg}")
         st.sidebar.divider()
 
 menu_list = ["📊 Dashboard BI", "📝 Nuovo Ordine"]
 if ROLE == "Superadmin":
-    # Modificato il nome del menu Brand in "Brand e Stagioni"
     menu_list += ["🚚 Consegne", "💰 Incassi & Fatture", "💸 Erogazione Provvigioni", "🏪 Negozi", "🏷️ Brand e Stagioni", "👥 Agenti", "🔧 Manutenzione"]
 
-menu = st.sidebar.radio("Menu Navigazione", menu_list)
+menu = st.sidebar.radio("Seleziona Modulo:", menu_list)
 
-if st.sidebar.button("🚪 Disconnettiti", use_container_width=True):
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
+if st.sidebar.button("🚪 Disconnettiti", type="primary", use_container_width=True):
     st.session_state.auth = False
     st.rerun()
 
 # --- 6. LOGICA DELLE SEZIONI ---
 if menu == "📊 Dashboard BI":
     st.markdown("## 📊 Business Intelligence & Cash Flow")
+    st.markdown("<p style='color: #64748B;'>Monitoraggio in tempo reale delle vendite e delle provvigioni di rete.</p>", unsafe_allow_html=True)
     
     df_o = load_data("Ordini")
     df_n = load_data("Negozi")
@@ -278,7 +290,7 @@ if menu == "📊 Dashboard BI":
     df_liq = load_data("Liquidazioni")
 
     if df_o.empty:
-        st.info("💡 Nessun ordine presente.")
+        st.info("💡 Nessun ordine presente nel database.")
     else:
         df = pd.merge(df_o, df_n, left_on='ID_Negozio', right_on='Nome', how='left')
         df = pd.merge(df, df_a[['ID_Agente', 'Nome', 'Ruolo']], on='ID_Agente', suffixes=('', '_Agente'), how='left')
@@ -313,21 +325,20 @@ if menu == "📊 Dashboard BI":
         saldo_da_ricevere = mio_esigibile - liquidato
 
         # METRICHE
-        st.markdown("### 🏦 Stato Finanziario Provvigioni")
+        st.markdown("<br>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("⏳ Maturato (Merci Consegnate)", f"€ {mio_maturato:,.2f}")
-        c2.metric("💰 Esigibile (Fatture Incassate)", f"€ {mio_esigibile:,.2f}")
-        c3.metric("💸 Già Liquidato (Pagato)", f"€ {liquidato:,.2f}")
-        c4.metric("⚖️ Saldo Netto da Ricevere", f"€ {saldo_da_ricevere:,.2f}")
+        c1.metric("📦 Maturato Lordo", f"€ {mio_maturato:,.2f}")
+        c2.metric("💰 Esigibile (Fatturato)", f"€ {mio_esigibile:,.2f}")
+        c3.metric("💸 Quota Liquidata", f"€ {liquidato:,.2f}")
+        c4.metric("⚖️ Saldo Attivo a Credito", f"€ {saldo_da_ricevere:,.2f}")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        st.divider()
-
-        with st.expander("🔎 Filtri Avanzati di Ricerca", expanded=True):
+        with st.expander("🔎 Motore di Ricerca Avanzato", expanded=True):
             f1, f2, f3, f4 = st.columns(4)
-            with f1: date_filter = st.date_input("Calendario", [date(2026,1,1), date.today()])
+            with f1: date_filter = st.date_input("Periodo Fiscale", [date(2026,1,1), date.today()])
             with f2: anno_filter = st.multiselect("Anno Fiscale", sorted(df['Anno'].dropna().unique().astype(int).tolist()))
-            with f3: brand_filter = st.multiselect("Seleziona Brand", df['Brand'].dropna().unique())
-            with f4: stag_filter = st.multiselect("Stagione", df['Stagione'].dropna().unique())
+            with f3: brand_filter = st.multiselect("Filtro Brand", df['Brand'].dropna().unique())
+            with f4: stag_filter = st.multiselect("Filtro Stagione", df['Stagione'].dropna().unique())
 
         mask = pd.Series(True, index=df.index)
         if len(date_filter) == 2: mask &= (df['Data_Ordine'] >= pd.to_datetime(date_filter[0])) & (df['Data_Ordine'] <= pd.to_datetime(date_filter[1]))
@@ -337,258 +348,229 @@ if menu == "📊 Dashboard BI":
         
         df_filtered = df[mask]
 
-        tab_geo, tab_produttore, tab_matrice, tab_rete = st.tabs(["🌍 Geografia", "📈 Report Produttori", "🎯 Matrice Clienti", "👥 Rete Vendita"])
+        st.markdown("<br>", unsafe_allow_html=True)
+        tab_geo, tab_produttore, tab_matrice, tab_rete = st.tabs(["🌍 Dati Geografici", "📈 Report Aziende", "🎯 Matrice Copertura Clienti", "👥 Performance Rete"])
         
         with tab_geo:
+            st.markdown("<br>", unsafe_allow_html=True)
             col_reg, col_prov, col_cit = st.columns(3)
             with col_reg:
-                if 'Regione' in df_filtered.columns:
-                    st.dataframe(df_filtered.groupby('Regione').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+                st.markdown("#### Volumi per Regione")
+                if 'Regione' in df_filtered.columns: st.dataframe(df_filtered.groupby('Regione').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
             with col_prov:
-                if 'Provincia' in df_filtered.columns:
-                    st.dataframe(df_filtered.groupby('Provincia').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
+                st.markdown("#### Volumi per Provincia")
+                if 'Provincia' in df_filtered.columns: st.dataframe(df_filtered.groupby('Provincia').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
             with col_cit:
-                if 'Citta' in df_filtered.columns:
-                    st.dataframe(df_filtered.groupby('Citta').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False).head(15), use_container_width=True)
+                st.markdown("#### Top 15 Città")
+                if 'Citta' in df_filtered.columns: st.dataframe(df_filtered.groupby('Citta').agg({'ID_Ordine':'count', 'Ordinato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False).head(15), use_container_width=True)
 
         with tab_produttore:
-            st.markdown("#### Ordinato per Produttore / Azienda")
-            st.caption("Visualizza i totali raccolti divisi per Brand e Stagione")
+            st.markdown("<br>#### Ordinato Globale per Casa Mandante", unsafe_allow_html=True)
             if not df_filtered.empty:
-                df_prod = df_filtered.groupby(['Brand', 'Stagione']).agg({
-                    'ID_Ordine': 'count',
-                    'Ordinato_€': 'sum',
-                    'Consegnato_€': 'sum'
-                }).reset_index().sort_values(['Brand', 'Stagione'])
-                df_prod.rename(columns={'ID_Ordine': 'Q.tà Ordini', 'Ordinato_€': 'Totale Ordinato (€)', 'Consegnato_€': 'Totale Consegnato (€)'}, inplace=True)
-                
-                st.dataframe(df_prod.style.format({'Totale Ordinato (€)': '{:,.2f}', 'Totale Consegnato (€)': '{:,.2f}'}), use_container_width=True)
+                df_prod = df_filtered.groupby(['Brand', 'Stagione']).agg({'ID_Ordine': 'count', 'Ordinato_€': 'sum', 'Consegnato_€': 'sum'}).reset_index().sort_values(['Brand', 'Stagione'])
+                df_prod.rename(columns={'ID_Ordine': 'N° Ordini', 'Ordinato_€': 'Ordinato Lordo (€)', 'Consegnato_€': 'Consegnato Netto (€)'}, inplace=True)
+                st.dataframe(df_prod.style.format({'Ordinato Lordo (€)': '{:,.2f}', 'Consegnato Netto (€)': '{:,.2f}'}), use_container_width=True)
                 
         with tab_matrice:
-            st.markdown("#### Matrice di Copertura per Cliente (Storico Acquisti / Vuoti)")
-            st.caption("Verifica quali clienti hanno confermato o saltato l'acquisto di una determinata collezione stagionale.")
+            st.markdown("<br>#### Matrice Storico Acquisti / Scoperti", unsafe_allow_html=True)
             if not df_filtered.empty:
-                matrice = df_filtered.pivot_table(
-                    index='ID_Negozio', 
-                    columns=['Brand', 'Stagione'], 
-                    values='Ordinato_€', 
-                    aggfunc='sum'
-                ).fillna(0)
-                
-                def highlight_zeros(val):
-                    color = '#ffcccc' if val == 0 else '#ccffcc'
-                    return f'background-color: {color}'
-                
+                matrice = df_filtered.pivot_table(index='ID_Negozio', columns=['Brand', 'Stagione'], values='Ordinato_€', aggfunc='sum').fillna(0)
+                def highlight_zeros(val): return 'background-color: #FEE2E2; color: #991B1B' if val == 0 else 'background-color: #DCFCE7; color: #166534'
                 st.dataframe(matrice.style.format("{:,.2f} €").applymap(highlight_zeros), use_container_width=True)
             
         with tab_rete:
+            st.markdown("<br>", unsafe_allow_html=True)
             if ROLE == "Superadmin":
-                st.markdown("#### Classifica Agenti e Portafoglio")
+                st.markdown("#### Classifica Agenti (Leaderboard)")
                 st.dataframe(df_filtered.groupby('Nome_Agente').agg({'Ordinato_€':'sum', 'Consegnato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
-            else:
-                st.info("I dati aggregati della rete sono visibili solo alla direzione.")
+            else: st.info("Le performance globali della rete sono classificate come dati confidenziali direzionali.")
 
 elif menu == "📝 Nuovo Ordine":
-    st.markdown("## 📝 Registra Nuovo Ordine")
+    st.markdown("## 📝 Emissione Nuovo Ordine")
     df_n, df_b, df_a = load_data("Negozi"), load_data("Brand"), load_data("Agenti")
-    
-    # FETCH DINAMICO DELLE STAGIONI DAL DATABASE
     df_s = load_data("Stagioni").sort_values('Ordinamento')
-    lista_stagioni = df_s['Nome_Stagione'].tolist() if not df_s.empty else ["Nessuna stagione configurata"]
+    lista_stagioni = df_s['Nome_Stagione'].tolist() if not df_s.empty else ["Nessuna stagione"]
     
     with st.form("form_ordine", clear_on_submit=True):
+        st.markdown("#### 1. Dati Commerciali Base")
         c1, c2, c3 = st.columns(3)
         with c1:
             id_o = st.text_input("Codice Identificativo Ordine")
-            neg = st.selectbox("Seleziona Negozio", df_n['Nome'].tolist() if not df_n.empty else [])
+            neg = st.selectbox("Seleziona Negozio Cliente", df_n['Nome'].tolist() if not df_n.empty else [])
         with c2:
-            brand = st.selectbox("Seleziona Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else [])
-            stagione = st.selectbox("Seleziona Stagione", lista_stagioni)
+            brand = st.selectbox("Azienda / Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else [])
+            stagione = st.selectbox("Collezione Stagionale", lista_stagioni)
         with c3:
             val = st.number_input("Valore Lordo Ordine (€)", min_value=0.0)
-            agente_id = st.selectbox("Assegnato a:", df_a['ID_Agente'].tolist()) if ROLE == "Superadmin" else U['ID_Agente']
+            agente_id = st.selectbox("Riferimento Commerciale (Agente)", df_a['ID_Agente'].tolist()) if ROLE == "Superadmin" else U['ID_Agente']
             
-        st.markdown("#### 💳 Condizioni di Pagamento Concordate")
+        st.markdown("<hr style='margin: 1.5em 0; border: 0; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+        st.markdown("#### 2. Termini e Scadenze")
         c4, c5, c6 = st.columns(3)
-        with c4: data_o = st.date_input("Data Sottoscrizione", date.today())
-        with c5: metodo = st.selectbox("Metodo Previsto", ["Da Definire", "RiBa 30gg", "RiBa 60gg", "RiBa 90gg", "Bonifico", "Assegno", "Contanti"])
-        with c6: scadenza = st.date_input("Data Scadenza Prevista", date.today() + timedelta(days=30))
+        with c4: data_o = st.date_input("Data Emissione Ordine", date.today())
+        with c5: metodo = st.selectbox("Metodo Pagamento Richiesto", ["Da Definire", "RiBa 30gg", "RiBa 60gg", "RiBa 90gg", "Bonifico", "Assegno", "Contanti"])
+        with c6: scadenza = st.date_input("Scadenza Concordata", date.today() + timedelta(days=30))
 
-        if st.form_submit_button("Conferma e Salva Ordine", type="primary"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.form_submit_button("Archivia e Salva Ordine Definitivo", type="primary"):
             if id_o and neg and brand:
                 try:
                     query = """INSERT INTO Ordini (ID_Ordine, Stagione, ID_Agente, ID_Negozio, Brand, `Ordinato_€`, `Consegnato_€`, Stato_Incasso, `Incassato_€`, Data_Ordine, Metodo_Pagamento, Data_Scadenza, Numero_Fattura) 
                                VALUES (:id, :stag, :ag, :neg, :b, :v, 0.0, 'In Attesa', 0.0, :d, :mp, :ds, '')"""
-                    params = {"id": id_o, "stag": stagione, "ag": str(agente_id), "neg": neg, "b": brand, "v": val, "d": str(data_o), "mp": metodo, "ds": str(scadenza)}
-                    execute_query(query, params)
-                    st.success("✅ Ordine registrato con successo!")
+                    execute_query(query, {"id": id_o, "stag": stagione, "ag": str(agente_id), "neg": neg, "b": brand, "v": val, "d": str(data_o), "mp": metodo, "ds": str(scadenza)})
+                    st.success("✅ Ordine archiviato correttamente nel Cloud aziendale.")
                 except Exception as e:
-                    st.error("⚠️ Errore: Codice Identificativo Ordine già esistente.")
-            else: st.error("Compila i campi obbligatori.")
+                    st.error("⚠️ Attenzione: il Codice Ordine inserito è già presente a sistema.")
+            else: st.error("Errore: Compila tutti i campi obbligatori prima di procedere.")
 
 elif menu == "💰 Incassi & Fatture":
-    st.markdown("## 💰 Gestione Fatture, Scadenze e Incassi")
+    st.markdown("## 💰 Riconciliazione Fatture e Incassi")
     df_o = load_data("Ordini")
     da_inc = df_o[(df_o['Consegnato_€'] > 0) & (df_o['Incassato_€'] < df_o['Consegnato_€'])]
     
     if not da_inc.empty:
-        sel = st.selectbox("Seleziona Ordine/DDT da Incassare o Modificare:", (da_inc['ID_Ordine'] + " | " + da_inc['ID_Negozio'] + " | Rimanenza: € " + (da_inc['Consegnato_€'] - da_inc['Incassato_€']).astype(str)).tolist())
+        sel = st.selectbox("Cerca Documento Aperto (Digita per cercare):", (da_inc['ID_Ordine'] + " | " + da_inc['ID_Negozio'] + " | Insoluto: € " + (da_inc['Consegnato_€'] - da_inc['Incassato_€']).astype(str)).tolist())
         id_sel = sel.split(" | ")[0]
         r_dati = da_inc[da_inc['ID_Ordine'] == id_sel].iloc[0]
         residuo = r_dati['Consegnato_€'] - r_dati['Incassato_€']
         
         with st.form("form_incasso"):
-            st.markdown(f"**Dettagli Attuali:** Fattura: `{r_dati.get('Numero_Fattura', 'N/D')}` | Metodo: `{r_dati.get('Metodo_Pagamento', 'N/D')}` | Scadenza: `{r_dati.get('Data_Scadenza', 'N/D')}`")
+            st.markdown(f"**Dati Attuali:** Fattura: `{r_dati.get('Numero_Fattura', 'N/D')}` | Metodo: `{r_dati.get('Metodo_Pagamento', 'N/D')}` | Scadenza: `{r_dati.get('Data_Scadenza', 'N/D')}`")
             c1, c2, c3 = st.columns(3)
-            with c1: nuovo_nf = st.text_input("Aggiorna N° Fattura", value=str(r_dati.get('Numero_Fattura', '')))
+            with c1: nuovo_nf = st.text_input("Correggi N° Fattura", value=str(r_dati.get('Numero_Fattura', '')))
             with c2: nuovo_mp = st.selectbox("Modifica Metodo", ["RiBa", "Bonifico", "Assegno", "Contanti"], index=0 if r_dati.get('Metodo_Pagamento') and 'RiBa' in r_dati.get('Metodo_Pagamento') else 1)
-            with c3: nuova_scadenza = st.date_input("Modifica Scadenza", pd.to_datetime(r_dati['Data_Scadenza']) if pd.notnull(r_dati.get('Data_Scadenza')) else date.today())
+            with c3: nuova_scadenza = st.date_input("Ricalcola Scadenza", pd.to_datetime(r_dati['Data_Scadenza']) if pd.notnull(r_dati.get('Data_Scadenza')) else date.today())
             
-            st.divider()
-            val_inc = st.number_input("Registra Nuovo Incasso Reale (€)", max_value=residuo, min_value=0.00, value=0.00)
+            st.markdown("<hr style='margin: 1.5em 0; border: 0; border-top: 1px dashed #CBD5E1;'>", unsafe_allow_html=True)
+            val_inc = st.number_input("Immetti Transazione Ricevuta (€)", max_value=residuo, min_value=0.00, value=0.00)
+            st.markdown("<br>", unsafe_allow_html=True)
             
-            if st.form_submit_button("Salva Modifiche / Registra Pagamento", type="primary"):
+            if st.form_submit_button("Applica Modifiche ed Esegui Riconciliazione", type="primary"):
                 execute_query("UPDATE Ordini SET Numero_Fattura = :nf, Metodo_Pagamento = :mp, Data_Scadenza = :ds WHERE ID_Ordine = :id", {"nf": nuovo_nf, "mp": nuovo_mp, "ds": str(nuova_scadenza), "id": id_sel})
                 if val_inc > 0:
-                    nuovo_tot = r_dati['Incassato_€'] + val_inc
                     execute_query("INSERT INTO Log_Pagamenti VALUES (:id, :d, :i, :m)", {"id": id_sel, "d": str(date.today()), "i": val_inc, "m": nuovo_mp})
-                    execute_query("UPDATE Ordini SET `Incassato_€` = :i WHERE ID_Ordine = :id", {"i": nuovo_tot, "id": id_sel})
-                    st.success(f"Aggiornato! Incasso di €{val_inc} registrato.")
+                    execute_query("UPDATE Ordini SET `Incassato_€` = :i WHERE ID_Ordine = :id", {"i": r_dati['Incassato_€'] + val_inc, "id": id_sel})
+                    st.success(f"Pagamento di €{val_inc} validato e registrato a bilancio.")
                 else:
-                    st.success("Dati fattura e scadenza aggiornati correttamente.")
+                    st.success("Dati fatturazione aggiornati con successo.")
                 st.rerun()
-    else: st.success("🎉 Non ci sono fatture pendenti o insoluti!")
+    else: st.success("🎉 Bilancio perfetto: non risultano fatture insolute nel sistema.")
 
 elif menu == "💸 Erogazione Provvigioni":
-    st.markdown("## 💸 Registro Liquidazione Provvigioni")
+    st.markdown("## 💸 Movimentazione Finanziaria Provvigioni")
     df_a = load_data("Agenti")
-    lista_beneficiari = ["Superadmin (Provvigioni Ricevute)"] + df_a[df_a['Ruolo'] != 'Superadmin']['Nome'].tolist()
+    lista_beneficiari = ["Superadmin (Provvigioni Ricevute da Brand)"] + df_a[df_a['Ruolo'] != 'Superadmin']['Nome'].tolist()
     
     with st.form("form_liquidazione"):
         c1, c2 = st.columns(2)
         with c1:
-            beneficiario = st.selectbox("Verso chi è la transazione?", lista_beneficiari)
-            importo = st.number_input("Importo Liquidato (€)", min_value=0.01)
+            beneficiario = st.selectbox("Destinatario / Mittente Transazione", lista_beneficiari)
+            importo = st.number_input("Ammontare Bonifico/Transazione (€)", min_value=0.01)
         with c2:
-            data_liq = st.date_input("Data Transazione", date.today())
-            note = st.text_input("Note (Es. Saldo Provvigioni Trimestre 1)")
+            data_liq = st.date_input("Data Effettiva Movimento", date.today())
+            note = st.text_input("Oggetto / Note Contabili")
             
-        if st.form_submit_button("Registra Pagamento Provvigioni", type="primary"):
-            id_liq = f"LIQ-{int(time.time())}"
-            ruolo = 'Superadmin' if beneficiario == "Superadmin (Provvigioni Ricevute)" else 'Agente'
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.form_submit_button("Disponi e Salva Transazione", type="primary"):
+            ruolo = 'Superadmin' if beneficiario.startswith("Superadmin") else 'Agente'
             nome_db = 'Superadmin' if ruolo == 'Superadmin' else beneficiario
-            execute_query("INSERT INTO Liquidazioni VALUES (:id, :d, :b, :r, :i, :n)", {"id": id_liq, "d": str(data_liq), "b": nome_db, "r": ruolo, "i": importo, "n": note})
-            st.success("Transazione contabile registrata!")
+            execute_query("INSERT INTO Liquidazioni VALUES (:id, :d, :b, :r, :i, :n)", {"id": f"LIQ-{int(time.time())}", "d": str(data_liq), "b": nome_db, "r": ruolo, "i": importo, "n": note})
+            st.success("Transazione approvata. I contatori della Dashboard sono stati aggiornati.")
             st.rerun()
 
+    st.markdown("<br>#### Registro Libro Giornale Liquidazioni", unsafe_allow_html=True)
     df_liq = load_data("Liquidazioni")
     if not df_liq.empty: st.dataframe(df_liq.sort_values('Data', ascending=False), use_container_width=True)
 
 elif menu == "🚚 Consegne":
-    st.markdown("## 🚚 Gestione Scarico Merci (DDT)")
+    st.markdown("## 🚚 Logistica e Scarico DDT")
     df_o = load_data("Ordini")
     da_consegnare = df_o[df_o['Consegnato_€'] < df_o['Ordinato_€']]
     if not da_consegnare.empty:
-        sel = st.selectbox("Ordini in Lavorazione:", (da_consegnare['ID_Ordine'] + " | " + da_consegnare['ID_Negozio']).tolist())
+        sel = st.selectbox("Ordini in Attesa di Merce:", (da_consegnare['ID_Ordine'] + " | " + da_consegnare['ID_Negozio']).tolist())
         id_sel = sel.split(" | ")[0]
         r_dati = da_consegnare[da_consegnare['ID_Ordine'] == id_sel].iloc[0]
         residuo = r_dati['Ordinato_€'] - r_dati['Consegnato_€']
-        val_scarico = st.number_input("Valore DDT Attuale (€)", max_value=residuo, min_value=0.01)
-        if st.button("Registra Consegna Merce", type="primary"):
+        val_scarico = st.number_input(f"Valore Bolla/DDT Attuale (€) - Max {residuo:,.2f}", max_value=residuo, min_value=0.01)
+        if st.button("Registra Bolla di Consegna", type="primary"):
             nuovo = r_dati['Consegnato_€'] + val_scarico
-            stato = "Consegnato" if nuovo >= r_dati['Ordinato_€'] else "Parziale"
             execute_query("INSERT INTO Log_Consegne VALUES (:id, :d, :v)", {"id": id_sel, "d": str(date.today()), "v": val_scarico})
-            execute_query("UPDATE Ordini SET `Consegnato_€` = :c, Stato_Incasso = :s WHERE ID_Ordine = :id", {"c": nuovo, "s": stato, "id": id_sel})
-            st.success("DDT Registrato!"); st.rerun()
-    else: st.success("🎉 Tutte le merci ordinate sono state consegnate.")
+            execute_query("UPDATE Ordini SET `Consegnato_€` = :c, Stato_Incasso = :s WHERE ID_Ordine = :id", {"c": nuovo, "s": "Consegnato" if nuovo >= r_dati['Ordinato_€'] else "Parziale", "id": id_sel})
+            st.success("DDT Archiviato nel server!"); st.rerun()
+    else: st.success("Nessun carico merci pendente.")
 
 elif menu == "🏪 Negozi":
-    st.markdown("## 🏪 Anagrafica Negozi")
+    st.markdown("## 🏪 Gestione Anagrafica Negozi")
     with st.form("f_neg", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        with c1: n, p = st.text_input("Ragione Sociale"), st.text_input("Partita IVA")
+        with c1: n, p = st.text_input("Ragione Sociale Completa"), text_input("P.IVA / Codice Fiscale")
         with c2: 
-            c = st.text_input("Città")
+            c = st.text_input("Città Sede Operativa")
             c_prov, c_reg = st.columns(2)
-            with c_prov: pr = st.text_input("Provincia (Es. MI)")
+            with c_prov: pr = st.text_input("Prov. (Sigla)")
             with c_reg: r = st.text_input("Regione")
-        if st.form_submit_button("Aggiungi o Aggiorna", type="primary") and n:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.form_submit_button("Inserisci Nuova Azienda Cliente", type="primary") and n:
             execute_query("REPLACE INTO Negozi VALUES (:n, :p, :c, :pr, :r)", {"n": n, "p": p, "c": c, "pr": pr, "r": r})
-            st.success("Salvato!"); st.rerun()
+            st.success("Scheda cliente creata o aggiornata."); st.rerun()
     st.dataframe(load_data("Negozi"), use_container_width=True)
 
 elif menu == "🏷️ Brand e Stagioni":
-    st.markdown("## 🏷️ Gestione Configurazione Software")
-    
-    tab_brand, tab_stagioni = st.tabs(["🏢 Portafoglio Brand", "📅 Calendario Stagioni"])
+    st.markdown("## 🏷️ Architettura Sistema Commerciale")
+    tab_brand, tab_stagioni = st.tabs(["🏢 Impostazioni Brand", "📅 Timeline Stagioni"])
     
     with tab_brand:
-        st.markdown("#### Aggiungi o Modifica Brand")
         with st.form("f_brand", clear_on_submit=True):
             c1, c2 = st.columns(2)
-            with c1: ib, nb = st.text_input("ID Brand"), st.text_input("Nome Commerciale")
-            with c2: qt, qa = st.text_input("Provvigione Totale %"), st.text_input("Quota Agente %")
-            if st.form_submit_button("Salva Configurazione Brand", type="primary") and ib:
+            with c1: ib, nb = st.text_input("Codice Brand interno"), st.text_input("Ragione Sociale Mandante")
+            with c2: qt, qa = st.text_input("Mark-up Globale (%)"), st.text_input("Split Rete Vendita (%)")
+            if st.form_submit_button("Aggiungi o Aggiorna Mandante", type="primary") and ib:
                 execute_query("REPLACE INTO Brand VALUES (:i, :n, :qt, '0%', :qa)", {"i": ib, "n": nb, "qt": qt, "qa": qa})
-                st.success("Brand Salvato!"); st.rerun()
+                st.success("Parametri commerciali salvati."); st.rerun()
         st.dataframe(load_data("Brand"), use_container_width=True)
         
     with tab_stagioni:
-        st.markdown("#### Aggiungi Nuova Stagione")
-        st.caption("Crea nuove stagioni per le campagne vendite. L'ordinamento decide la priorità di visualizzazione nel menu a tendina.")
         with st.form("f_stagione", clear_on_submit=True):
             c1, c2 = st.columns([3, 1])
-            with c1: n_stag = st.text_input("Nome Stagione (Es. Primavera/Estate 28 (SS))")
-            with c2: ord_stag = st.number_input("Ordinamento", min_value=1, value=10)
-            
-            if st.form_submit_button("Salva Nuova Stagione", type="primary") and n_stag:
+            with c1: n_stag = st.text_input("Etichetta Campagna Vendite (Es. PE 2028)")
+            with c2: ord_stag = st.number_input("Priorità Menu", min_value=1, value=10)
+            if st.form_submit_button("Inizializza Nuova Stagione", type="primary") and n_stag:
                 execute_query("REPLACE INTO Stagioni VALUES (:n, :o)", {"n": n_stag, "o": ord_stag})
-                st.success("Stagione creata e resa disponibile per i nuovi ordini!"); st.rerun()
-                
-        st.markdown("<br>#### Elenco Stagioni Attive", unsafe_allow_html=True)
+                st.success("Stagione integrata nel menu a tendina ordini."); st.rerun()
         df_s = load_data("Stagioni").sort_values('Ordinamento')
         st.dataframe(df_s, use_container_width=True)
-        
-        if not df_s.empty:
-            st.markdown("#### Eliminazione Stagione")
-            del_stag = st.selectbox("Seleziona Stagione da rimuovere:", df_s['Nome_Stagione'].tolist())
-            if st.button("Elimina Definitivamente", type="primary"):
-                execute_query("DELETE FROM Stagioni WHERE Nome_Stagione = :n", {"n": del_stag})
-                st.success("Stagione rimossa dal database."); st.rerun()
 
 elif menu == "👥 Agenti":
-    st.markdown("## 👥 Gestione Rete Commerciale")
+    st.markdown("## 👥 Amministrazione Risorse Umane")
     df_a = load_data("Agenti")
-    tab1, tab2 = st.tabs(["➕ Crea / Modifica", "❌ Licenzia"])
+    tab1, tab2 = st.tabs(["➕ Onboarding Nuova Risorsa", "❌ Termine Contratto"])
     with tab1:
         with st.form("f_agente", clear_on_submit=True):
             c1, c2 = st.columns(2)
-            with c1: aid, anome, arole = st.text_input("ID Agente"), st.text_input("Nome"), st.selectbox("Ruolo", ["Agente", "Superadmin"])
-            with c2: amail, apass = st.text_input("Email"), st.text_input("Password", type="password")
-            if st.form_submit_button("Salva Account", type="primary") and aid:
+            with c1: aid, anome, arole = st.text_input("Matricola Rete (Es. AG-001)"), st.text_input("Nome Anagrafico"), st.selectbox("Diritti di Sistema", ["Agente", "Superadmin"])
+            with c2: amail, apass = st.text_input("Email Aziendale"), st.text_input("Password Iniziale", type="password")
+            if st.form_submit_button("Genera Account di Rete", type="primary") and aid:
                 execute_query("REPLACE INTO Agenti VALUES (:i, :n, :r, '', :m, :p)", {"i": aid, "n": anome, "r": arole, "m": amail, "p": apass})
-                st.success("Salvato!"); st.rerun()
+                st.success("Profilo di rete creato con successo."); st.rerun()
     with tab2:
         if not df_a.empty:
             agenti_eliminabili = df_a[df_a['ID_Agente'] != U['ID_Agente']]['ID_Agente'].tolist()
             if agenti_eliminabili:
-                target_agente = st.selectbox("Seleziona Agente da rimuovere:", agenti_eliminabili)
-                if st.button("Elimina", type="primary"):
+                target_agente = st.selectbox("Seleziona matricola da disabilitare:", agenti_eliminabili)
+                if st.button("Revoca Accessi", type="primary"):
                     execute_query("DELETE FROM Agenti WHERE ID_Agente = :id", {"id": target_agente})
-                    st.success("Rimosso."); st.rerun()
+                    st.success("Accessi di rete disabilitati."); st.rerun()
     st.dataframe(df_a.drop(columns=['Password']), use_container_width=True)
 
 elif menu == "🔧 Manutenzione":
-    st.markdown("## 🔧 Strumenti Amministratore")
+    st.markdown("## 🔧 Strumenti DB Superadmin")
     df_o = load_data("Ordini")
     if not df_o.empty:
         with st.container(border=True):
-            target = st.selectbox("Seleziona Ordine da annullare:", df_o['ID_Ordine'].tolist())
-            conferma = st.checkbox(f"Sono sicuro di voler eliminare l'ordine {target}")
-            if st.button("🗑️ Elimina Definitivamente", type="primary", disabled=not conferma):
+            target = st.selectbox("Seleziona riga Ordine per eliminazione forzata:", df_o['ID_Ordine'].tolist())
+            conferma = st.checkbox(f"Confermo di aver compreso che l'eliminazione dell'ordine {target} distruggerà irreversibilmente anche le relative fatture, DDT e log di incasso.")
+            if st.button("🔥 Esegui Cancellazione a Cascata", type="primary", disabled=not conferma):
                 execute_query("DELETE FROM Ordini WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
-                st.success("Eliminato!"); st.rerun()
-
-
+                st.success("Record vaporizzato dal Database SQL."); st.rerun()
