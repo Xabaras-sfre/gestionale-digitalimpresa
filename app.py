@@ -18,14 +18,14 @@ def inject_custom_css():
         
         /* 1. PALETTE COLORI DARK MODE & FONT GLOBALE */
         :root {
-            --bg-main: #0F172A;       /* Sfondo principale profondo */
-            --bg-card: #1E293B;       /* Sfondo delle sezioni/card */
-            --bg-input: #0B1120;      /* Sfondo scuro per i campi di testo */
-            --text-main: #F8FAFC;     /* Bianco ghiaccio per testi principali */
-            --text-muted: #94A3B8;    /* Grigio per sottotitoli */
-            --accent: #38BDF8;        /* Azzurro Elettrico/Neon (Uccide il rosso) */
-            --accent-hover: #0284C7;  /* Azzurro più scuro per i click */
-            --border-color: #334155;  /* Bordi leggeri tra gli elementi */
+            --bg-main: #0F172A;
+            --bg-card: #1E293B;
+            --bg-input: #0B1120;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent: #38BDF8;
+            --accent-hover: #0284C7;
+            --border-color: #334155;
         }
 
         html, body, [class*="css"] { 
@@ -34,22 +34,76 @@ def inject_custom_css():
             color: var(--text-main) !important;
         }
 
-        /* 2. FORZA COLORI TESTI OVUNQUE */
-        h1, h2, h3, h4, p, span, label, div {
-            color: var(--text-main);
-        }
-        
-        /* Titoli e Sottotitoli specifici */
+        h1, h2, h3, h4, p, span, label, div { color: var(--text-main); }
         h1, h2 { font-weight: 800 !important; letter-spacing: -1px; }
         .stMarkdown p, .stCaption p { color: var(--text-muted) !important; }
 
-        /* 3. SIDEBAR (Ancora più scura per staccare) */
+        /* =========================================================
+           2. FIX MOBILE & SFONDO SIDEBAR
+           ========================================================= */
         [data-testid="stSidebar"] {
-            background-color: #0B1120 !important;
+            background-color: #0B1120 !important; /* Colore solido e impenetrabile */
             border-right: 1px solid var(--border-color) !important;
+            z-index: 999999 !important; /* Forza la sidebar in primissimo piano */
+        }
+        
+        /* Oscuramento sfondo su Mobile (Il "velo" dietro la sidebar aperta) */
+        [data-testid="stSidebarOverlay"] {
+            background-color: rgba(15, 23, 42, 0.85) !important; 
+            backdrop-filter: blur(5px) !important; /* Effetto sfocatura del testo sottostante */
+            z-index: 999998 !important;
         }
 
-        /* 4. CARD, FORM E EXPANDER */
+        /* =========================================================
+           3. IL NUOVO MENU DI NAVIGAZIONE "APP-STYLE"
+           ========================================================= */
+        
+        /* Nasconde i classici "pallini" tondi del radio button */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
+            display: none !important;
+        }
+        
+        /* Trasforma le opzioni in pulsanti a tutta larghezza */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label {
+            background-color: transparent;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            transition: all 0.2s ease-in-out;
+            width: 100%;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        
+        /* Effetto quando passi il mouse sulle voci non selezionate */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px); /* Leggero scorrimento a destra */
+        }
+        
+        /* Effetto della voce ATTUALMENTE SELEZIONATA */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
+            background: linear-gradient(90deg, rgba(56,189,248,0.15) 0%, transparent 100%) !important;
+            border-left: 4px solid var(--accent) !important;
+            border-radius: 4px 12px 12px 4px !important;
+        }
+        
+        /* Colore del testo della voce selezionata */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] p {
+            color: var(--accent) !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.3px;
+        }
+
+        /* Allinea il testo all'interno del nuovo pulsante */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label div {
+            margin-left: 0 !important; 
+            padding-left: 4px !important;
+        }
+
+        /* =========================================================
+           4. CARD, METRICHE, INPUTS E BOTTONI 
+           ========================================================= */
         [data-testid="stForm"], .stExpander {
             background-color: var(--bg-card) !important;
             border: 1px solid var(--border-color) !important;
@@ -58,102 +112,48 @@ def inject_custom_css():
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
             transition: all 0.3s ease !important;
         }
-        [data-testid="stForm"]:hover, .stExpander:hover {
-            border-color: #475569 !important;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important;
-        }
+        [data-testid="stForm"]:hover, .stExpander:hover { border-color: #475569 !important; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important; }
 
-        /* 5. METRICHE (KPI) */
         [data-testid="stMetric"] {
-            background-color: var(--bg-card) !important;
-            padding: 20px !important;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            border-top: 4px solid var(--accent);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            background-color: var(--bg-card) !important; padding: 20px !important;
+            border-radius: 16px; border: 1px solid var(--border-color);
+            border-top: 4px solid var(--accent); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
         }
-        [data-testid="stMetric"]:hover {
-            transform: translateY(-5px);
-            border-top: 4px solid #7DD3FC;
-            box-shadow: 0 10px 15px rgba(56, 189, 248, 0.1);
-        }
+        [data-testid="stMetric"]:hover { transform: translateY(-5px); border-top: 4px solid #7DD3FC; box-shadow: 0 10px 15px rgba(56, 189, 248, 0.1); }
         [data-testid="stMetricValue"] { color: var(--accent) !important; font-weight: 800; font-size: 2.2rem; }
         [data-testid="stMetricLabel"] { color: var(--text-muted) !important; text-transform: uppercase; font-size: 0.85rem; font-weight: 600;}
 
-        /* 6. INPUTS E TENDINE (Elimina focus rosso) */
         .stTextInput input, .stSelectbox div[data-baseweb="select"], .stDateInput input, .stNumberInput input {
-            background-color: var(--bg-input) !important;
-            color: var(--text-main) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 8px !important;
-            padding: 0.7rem 1rem !important;
+            background-color: var(--bg-input) !important; color: var(--text-main) !important;
+            border: 1px solid var(--border-color) !important; border-radius: 8px !important; padding: 0.7rem 1rem !important;
         }
-        /* KILL DEL ROSSO SUL FOCUS */
         .stTextInput input:focus, .stSelectbox div[data-baseweb="select"]:focus-within, .stDateInput input:focus, .stNumberInput input:focus {
-            border-color: var(--accent) !important;
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3) !important;
+            border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3) !important;
         }
-        /* Colore scritte nei menu a tendina */
         ul[data-baseweb="menu"] { background-color: var(--bg-card) !important; }
         ul[data-baseweb="menu"] li { color: var(--text-main) !important; }
         ul[data-baseweb="menu"] li:hover { background-color: var(--border-color) !important; color: var(--accent) !important; }
 
-       /* 7. BOTTONI (Azzurro neon) */
-        div[data-testid="stFormSubmitButton"] > button, 
-        .stButton > button[kind="primary"] {
-            background-color: var(--accent) !important;
-            color: #000000 !important; /* <--- TESTO NERO SCURO */
-            border: none !important;
-            border-radius: 8px !important;
-            font-weight: 800 !important;
-            padding: 0.6rem 1.5rem !important;
-            box-shadow: 0 4px 10px rgba(56, 189, 248, 0.2) !important;
-            transition: all 0.2s ease !important;
+        /* Bottoni */
+        div[data-testid="stFormSubmitButton"] > button, .stButton > button[kind="primary"] {
+            background-color: var(--accent) !important; color: #000000 !important; border: none !important;
+            border-radius: 8px !important; font-weight: 800 !important; padding: 0.6rem 1.5rem !important;
+            box-shadow: 0 4px 10px rgba(56, 189, 248, 0.2) !important; transition: all 0.2s ease !important;
         }
-        
-        /* Forza il nero anche su eventuali elementi interni (paragrafi/span) del bottone */
-        div[data-testid="stFormSubmitButton"] > button *, 
-        .stButton > button[kind="primary"] * {
-            color: #000000 !important; 
-        }
-
-        /* Colore del bottone al passaggio del mouse (Hover) */
-        div[data-testid="stFormSubmitButton"] > button:hover, 
-        .stButton > button[kind="primary"]:hover {
-            transform: translateY(-2px) !important;
-            background-color: #7DD3FC !important; /* Azzurro leggermente più chiaro */
-            color: #000000 !important; /* <--- MANTIENI IL TESTO NERO SCURO */
+        div[data-testid="stFormSubmitButton"] > button *, .stButton > button[kind="primary"] * { color: #000000 !important; }
+        div[data-testid="stFormSubmitButton"] > button:hover, .stButton > button[kind="primary"]:hover {
+            transform: translateY(-2px) !important; background-color: #7DD3FC !important; color: #000000 !important;
             box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
         }
 
-        /* 8. TABS (Schede Dashboard - Elimina sottolineatura rossa) */
-        [data-testid="stTabs"] button {
-            color: var(--text-muted) !important;
-            border-bottom-color: transparent !important;
-            font-weight: 600;
-        }
-        [data-testid="stTabs"] button[aria-selected="true"] {
-            color: var(--accent) !important;
-            border-bottom-color: var(--accent) !important;
-        }
-        [data-testid="stTabs"] button:hover {
-            color: var(--accent) !important;
-        }
-        [data-testid="stTabs"] div[data-baseweb="tab-highlight"] {
-            background-color: var(--accent) !important; /* Riga animata sotto i tab */
-        }
-
-        /* 9. RADIO BUTTONS E CHECKBOX (Uccide il rosso) */
-        div[data-baseweb="radio"] div, div[data-baseweb="checkbox"] div {
-            background-color: transparent !important;
-        }
+        /* Tabs */
+        [data-testid="stTabs"] button { color: var(--text-muted) !important; border-bottom-color: transparent !important; font-weight: 600; }
+        [data-testid="stTabs"] button[aria-selected="true"] { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+        [data-testid="stTabs"] button:hover { color: var(--accent) !important; }
+        [data-testid="stTabs"] div[data-baseweb="tab-highlight"] { background-color: var(--accent) !important; }
         
-        /* 10. TABELLE DATAFRAME */
-        [data-testid="stDataFrame"] {
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-        }
+        [data-testid="stDataFrame"] { border: 1px solid var(--border-color); border-radius: 12px; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -575,5 +575,6 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Record vaporizzato dal Database SQL."); st.rerun()
+
 
 
