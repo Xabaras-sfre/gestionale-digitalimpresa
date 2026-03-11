@@ -168,14 +168,19 @@ if menu == "📊 Dashboard BI":
         df['Provv_Admin_Maturata'] = df.apply(lambda r: r['Consegnato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Consegnato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
         df['Provv_Admin_Esigibile'] = df.apply(lambda r: r['Incassato_€'] * r['rate_totale'] if r['Ruolo'] == 'Superadmin' else r['Incassato_€'] * (r['rate_totale'] - r['rate_agente']), axis=1)
         
+        # FIX: Riapplicate le colonne al dataframe per permettere i calcoli nei grafici
         if ROLE != "Superadmin":
             df = df[df['ID_Agente'] == str(U['ID_Agente'])]
-            mio_maturato = df['Provv_Agente_Maturata'].sum()
-            mio_esigibile = df['Provv_Agente_Esigibile'].sum()
+            df['Mio_Maturato'] = df['Provv_Agente_Maturata']
+            df['Mio_Esigibile'] = df['Provv_Agente_Esigibile']
+            mio_maturato = df['Mio_Maturato'].sum()
+            mio_esigibile = df['Mio_Esigibile'].sum()
             liquidato = df_liq[df_liq['Beneficiario'] == U['Nome']]['Importo'].sum() if not df_liq.empty else 0
         else:
-            mio_maturato = df['Provv_Admin_Maturata'].sum()
-            mio_esigibile = df['Provv_Admin_Esigibile'].sum()
+            df['Mio_Maturato'] = df['Provv_Admin_Maturata']
+            df['Mio_Esigibile'] = df['Provv_Admin_Esigibile']
+            mio_maturato = df['Mio_Maturato'].sum()
+            mio_esigibile = df['Mio_Esigibile'].sum()
             liquidato = df_liq[df_liq['Beneficiario'] == 'Superadmin']['Importo'].sum() if not df_liq.empty else 0
 
         saldo_da_ricevere = mio_esigibile - liquidato
@@ -230,22 +235,19 @@ if menu == "📊 Dashboard BI":
                 }).reset_index().sort_values(['Brand', 'Stagione'])
                 df_prod.rename(columns={'ID_Ordine': 'Q.tà Ordini', 'Ordinato_€': 'Totale Ordinato (€)', 'Consegnato_€': 'Totale Consegnato (€)'}, inplace=True)
                 
-                # Applichiamo una formattazione elegante alla tabella
                 st.dataframe(df_prod.style.format({'Totale Ordinato (€)': '{:,.2f}', 'Totale Consegnato (€)': '{:,.2f}'}), use_container_width=True)
                 
         with tab_matrice:
             st.markdown("#### Matrice di Copertura per Cliente (Storico Acquisti / Vuoti)")
             st.caption("Verifica quali clienti hanno confermato o saltato l'acquisto di una determinata collezione stagionale.")
             if not df_filtered.empty:
-                # Creiamo una tabella Pivot: Righe = Negozio, Colonne = Brand + Stagione, Valori = Ordinato
                 matrice = df_filtered.pivot_table(
                     index='ID_Negozio', 
                     columns=['Brand', 'Stagione'], 
                     values='Ordinato_€', 
                     aggfunc='sum'
-                ).fillna(0) # I clienti che hanno saltato la stagione mostreranno 0.00
+                ).fillna(0)
                 
-                # Stile per evidenziare di rosso gli zeri (chi non ha ordinato) e in verde chi ha ordinato
                 def highlight_zeros(val):
                     color = '#ffcccc' if val == 0 else '#ccffcc'
                     return f'background-color: {color}'
@@ -270,7 +272,6 @@ elif menu == "📝 Nuovo Ordine":
             neg = st.selectbox("Seleziona Negozio", df_n['Nome'].tolist() if not df_n.empty else [])
         with c2:
             brand = st.selectbox("Seleziona Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else [])
-            # Nuovo campo per gestire liberamente la stagione
             stagione = st.selectbox("Seleziona Stagione", ["Autunno/Inverno 24/25 (FW)", "Primavera/Estate 25 (SS)", "Autunno/Inverno 25/26 (FW)", "Primavera/Estate 26 (SS)", "Autunno/Inverno 26/27 (FW)"])
         with c3:
             val = st.number_input("Valore Lordo Ordine (€)", min_value=0.0)
