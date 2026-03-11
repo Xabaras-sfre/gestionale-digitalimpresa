@@ -249,7 +249,7 @@ if not st.session_state.auth:
 U = st.session_state.user
 ROLE = U['Ruolo']
 
-st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='margin-bottom:0;'>NETWORK<br><span style='color:#38BDF8;'>2026</span></h2></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='margin-bottom:0;'>GESTIONALE<br><span style='color:#38BDF8;'>DIGITALIMPRESA</span></h2></div>", unsafe_allow_html=True)
 st.sidebar.markdown(f"👤 **{U['Nome']}**<br>🛡️ Livello: `{ROLE}`", unsafe_allow_html=True)
 st.sidebar.divider()
 
@@ -575,6 +575,7 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Record vaporizzato dal Database SQL."); st.rerun()
+
 
 
 
