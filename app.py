@@ -99,10 +99,11 @@ def inject_custom_css():
         ul[data-baseweb="menu"] li { color: var(--text-main) !important; }
         ul[data-baseweb="menu"] li:hover { background-color: var(--border-color) !important; color: var(--accent) !important; }
 
-        /* 7. BOTTONI (Azzurro neon) */
-        div[data-testid="stFormSubmitButton"] > button, .stButton > button[kind="primary"] {
+       /* 7. BOTTONI (Azzurro neon) */
+        div[data-testid="stFormSubmitButton"] > button, 
+        .stButton > button[kind="primary"] {
             background-color: var(--accent) !important;
-            color: #0F172A !important; /* Testo scuro su bottone chiaro per contrasto */
+            color: #000000 !important; /* <--- TESTO NERO SCURO */
             border: none !important;
             border-radius: 8px !important;
             font-weight: 800 !important;
@@ -110,9 +111,19 @@ def inject_custom_css():
             box-shadow: 0 4px 10px rgba(56, 189, 248, 0.2) !important;
             transition: all 0.2s ease !important;
         }
-        div[data-testid="stFormSubmitButton"] > button:hover, .stButton > button[kind="primary"]:hover {
+        
+        /* Forza il nero anche su eventuali elementi interni (paragrafi/span) del bottone */
+        div[data-testid="stFormSubmitButton"] > button *, 
+        .stButton > button[kind="primary"] * {
+            color: #000000 !important; 
+        }
+
+        /* Colore del bottone al passaggio del mouse (Hover) */
+        div[data-testid="stFormSubmitButton"] > button:hover, 
+        .stButton > button[kind="primary"]:hover {
             transform: translateY(-2px) !important;
-            background-color: #7DD3FC !important;
+            background-color: #7DD3FC !important; /* Azzurro leggermente più chiaro */
+            color: #000000 !important; /* <--- MANTIENI IL TESTO NERO SCURO */
             box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
         }
 
@@ -564,3 +575,4 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Record vaporizzato dal Database SQL."); st.rerun()
+
