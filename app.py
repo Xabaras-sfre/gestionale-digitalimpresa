@@ -8,150 +8,140 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, date, timedelta
 import time
 
-# --- 1. CONFIGURAZIONE PAGINA E DESIGN PREMIUM ---
+# --- 1. CONFIGURAZIONE PAGINA E DESIGN DARK MODE ---
 st.set_page_config(page_title="Network 2026", layout="wide", page_icon="👔", initial_sidebar_state="expanded")
 
 def inject_custom_css():
     st.markdown("""
         <style>
-        /* FONT IMPORT */
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
-        /* 1. RESET GLOBALE E SFONDO APP */
+        /* 1. PALETTE COLORI DARK MODE & FONT GLOBALE */
+        :root {
+            --bg-main: #0F172A;       /* Sfondo principale profondo */
+            --bg-card: #1E293B;       /* Sfondo delle sezioni/card */
+            --bg-input: #0B1120;      /* Sfondo scuro per i campi di testo */
+            --text-main: #F8FAFC;     /* Bianco ghiaccio per testi principali */
+            --text-muted: #94A3B8;    /* Grigio per sottotitoli */
+            --accent: #38BDF8;        /* Azzurro Elettrico/Neon (Uccide il rosso) */
+            --accent-hover: #0284C7;  /* Azzurro più scuro per i click */
+            --border-color: #334155;  /* Bordi leggeri tra gli elementi */
+        }
+
         html, body, [class*="css"] { 
             font-family: 'Plus Jakarta Sans', sans-serif !important; 
-        }
-        .stApp {
-            background-color: #F3F6F9 !important; /* Grigio perla elegante per staccare le card bianche */
+            background-color: var(--bg-main) !important;
+            color: var(--text-main) !important;
         }
 
-        /* 2. SIDEBAR PREMIUM (DARK NAV) */
+        /* 2. FORZA COLORI TESTI OVUNQUE */
+        h1, h2, h3, h4, p, span, label, div {
+            color: var(--text-main);
+        }
+        
+        /* Titoli e Sottotitoli specifici */
+        h1, h2 { font-weight: 800 !important; letter-spacing: -1px; }
+        .stMarkdown p, .stCaption p { color: var(--text-muted) !important; }
+
+        /* 3. SIDEBAR (Ancora più scura per staccare) */
         [data-testid="stSidebar"] {
-            background-color: #0B1120 !important; /* Blu notte profondissimo */
-            border-right: none !important;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-        }
-        [data-testid="stSidebar"] * {
-            color: #E2E8F0 !important; /* Testo chiaro sulla sidebar */
-        }
-        [data-testid="stSidebar"] .stRadio > div {
-            gap: 0.5rem;
-        }
-        [data-testid="stSidebar"] .stRadio label {
-            background-color: rgba(255,255,255,0.05);
-            padding: 10px 15px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        [data-testid="stSidebar"] .stRadio label:hover {
-            background-color: rgba(255,255,255,0.1);
-            transform: translateX(5px);
-        }
-        [data-testid="stSidebar"] .stRadio div[role="radio"][aria-checked="true"] + div {
-            color: #38BDF8 !important; /* Azzurro neon per la voce selezionata */
-            font-weight: 700;
+            background-color: #0B1120 !important;
+            border-right: 1px solid var(--border-color) !important;
         }
 
-        /* 3. CARD DESIGN PER FORM E CONTENITORI (SEZIONI BEN DEFINITE) */
+        /* 4. CARD, FORM E EXPANDER */
         [data-testid="stForm"], .stExpander {
-            background-color: #FFFFFF !important;
+            background-color: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
             border-radius: 16px !important;
             padding: 24px !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
             transition: all 0.3s ease !important;
         }
         [data-testid="stForm"]:hover, .stExpander:hover {
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
-            transform: translateY(-2px);
+            border-color: #475569 !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important;
         }
 
-        /* 4. METRICHE (KPI) IN ALTO */
+        /* 5. METRICHE (KPI) */
         [data-testid="stMetric"] {
-            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            background-color: var(--bg-card) !important;
             padding: 20px !important;
             border-radius: 16px;
-            border: 1px solid #E2E8F0;
-            border-left: 6px solid #2563EB;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--accent);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
         [data-testid="stMetric"]:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
-            border-left: 6px solid #38BDF8;
+            border-top: 4px solid #7DD3FC;
+            box-shadow: 0 10px 15px rgba(56, 189, 248, 0.1);
         }
-        [data-testid="stMetricLabel"] {
-            font-weight: 600;
-            color: #64748B;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.85rem;
-        }
-        [data-testid="stMetricValue"] {
-            color: #0F172A;
-            font-weight: 800;
-            font-size: 2.2rem;
-        }
+        [data-testid="stMetricValue"] { color: var(--accent) !important; font-weight: 800; font-size: 2.2rem; }
+        [data-testid="stMetricLabel"] { color: var(--text-muted) !important; text-transform: uppercase; font-size: 0.85rem; font-weight: 600;}
 
-        /* 5. ELIMINAZIONE DEL ROSSO SUI PULSANTI (PULSANTI GRADIENTE) */
-        div[data-testid="stFormSubmitButton"] > button,
-        .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
-            color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 10px !important;
-            font-weight: 700 !important;
-            padding: 0.6rem 1.5rem !important;
-            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39) !important;
-            transition: all 0.3s ease !important;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        div[data-testid="stFormSubmitButton"] > button:hover,
-        .stButton > button[kind="primary"]:hover {
-            transform: translateY(-3px) !important;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5) !important;
-            background: linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%) !important;
-        }
-
-        /* 6. CAMPI DI TESTO E MENU A TENDINA */
-        .stTextInput>div>div>input, 
-        .stSelectbox>div>div>div, 
-        .stDateInput>div>div>input, 
-        .stNumberInput>div>div>input {
-            background-color: #F8FAFC !important;
-            border-radius: 10px !important;
-            border: 1px solid #CBD5E1 !important;
+        /* 6. INPUTS E TENDINE (Elimina focus rosso) */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"], .stDateInput input, .stNumberInput input {
+            background-color: var(--bg-input) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 8px !important;
             padding: 0.7rem 1rem !important;
-            color: #0F172A !important;
-            transition: all 0.2s ease;
         }
-        .stTextInput>div>div>input:focus, 
-        .stSelectbox>div>div>div:focus {
-            background-color: #FFFFFF !important;
-            border-color: #2563EB !important;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+        /* KILL DEL ROSSO SUL FOCUS */
+        .stTextInput input:focus, .stSelectbox div[data-baseweb="select"]:focus-within, .stDateInput input:focus, .stNumberInput input:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3) !important;
+        }
+        /* Colore scritte nei menu a tendina */
+        ul[data-baseweb="menu"] { background-color: var(--bg-card) !important; }
+        ul[data-baseweb="menu"] li { color: var(--text-main) !important; }
+        ul[data-baseweb="menu"] li:hover { background-color: var(--border-color) !important; color: var(--accent) !important; }
+
+        /* 7. BOTTONI (Azzurro neon) */
+        div[data-testid="stFormSubmitButton"] > button, .stButton > button[kind="primary"] {
+            background-color: var(--accent) !important;
+            color: #0F172A !important; /* Testo scuro su bottone chiaro per contrasto */
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 800 !important;
+            padding: 0.6rem 1.5rem !important;
+            box-shadow: 0 4px 10px rgba(56, 189, 248, 0.2) !important;
+            transition: all 0.2s ease !important;
+        }
+        div[data-testid="stFormSubmitButton"] > button:hover, .stButton > button[kind="primary"]:hover {
+            transform: translateY(-2px) !important;
+            background-color: #7DD3FC !important;
+            box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
         }
 
-        /* 7. TABELLA (DATAFRAME) STYLING */
-        [data-testid="stDataFrame"] {
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-            border: 1px solid #E2E8F0;
+        /* 8. TABS (Schede Dashboard - Elimina sottolineatura rossa) */
+        [data-testid="stTabs"] button {
+            color: var(--text-muted) !important;
+            border-bottom-color: transparent !important;
+            font-weight: 600;
+        }
+        [data-testid="stTabs"] button[aria-selected="true"] {
+            color: var(--accent) !important;
+            border-bottom-color: var(--accent) !important;
+        }
+        [data-testid="stTabs"] button:hover {
+            color: var(--accent) !important;
+        }
+        [data-testid="stTabs"] div[data-baseweb="tab-highlight"] {
+            background-color: var(--accent) !important; /* Riga animata sotto i tab */
+        }
+
+        /* 9. RADIO BUTTONS E CHECKBOX (Uccide il rosso) */
+        div[data-baseweb="radio"] div, div[data-baseweb="checkbox"] div {
+            background-color: transparent !important;
         }
         
-        /* TITOLI */
-        h1, h2 {
-            color: #0F172A !important;
-            font-weight: 800 !important;
-            letter-spacing: -1px;
-        }
-        h3, h4 {
-            color: #1E293B !important;
-            font-weight: 700 !important;
+        /* 10. TABELLE DATAFRAME */
+        [data-testid="stDataFrame"] {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -229,9 +219,9 @@ if not st.session_state.auth:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
-        st.markdown("<h1 style='text-align: center; color: #0F172A !important;'>Corporate Login</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>SYSTEM<span style='color: #38BDF8;'>LOGIN</span></h1>", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=True):
-            st.markdown("<p style='text-align: center; color: #64748B;'>Inserisci le credenziali per accedere all'ERP 2026</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center;'>Autenticazione richiesta per l'accesso ai dati aziendali.</p>", unsafe_allow_html=True)
             u = st.text_input("Username", placeholder="ID Agente o Nome")
             p = st.text_input("Password", type="password", placeholder="••••••••")
             st.markdown("<br>", unsafe_allow_html=True)
@@ -248,9 +238,8 @@ if not st.session_state.auth:
 U = st.session_state.user
 ROLE = U['Ruolo']
 
-# Decorazione della sidebar
-st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='color: white !important; margin-bottom:0;'>NETWORK<br><span style='color:#38BDF8;'>2026</span></h2></div>", unsafe_allow_html=True)
-st.sidebar.markdown(f"👤 Ciao, **{U['Nome']}**<br>🛡️ Livello: `{ROLE}`", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='margin-bottom:0;'>NETWORK<br><span style='color:#38BDF8;'>2026</span></h2></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"👤 **{U['Nome']}**<br>🛡️ Livello: `{ROLE}`", unsafe_allow_html=True)
 st.sidebar.divider()
 
 df_ordini = load_data("Ordini")
@@ -281,7 +270,7 @@ if st.sidebar.button("🚪 Disconnettiti", type="primary", use_container_width=T
 # --- 6. LOGICA DELLE SEZIONI ---
 if menu == "📊 Dashboard BI":
     st.markdown("## 📊 Business Intelligence & Cash Flow")
-    st.markdown("<p style='color: #64748B;'>Monitoraggio in tempo reale delle vendite e delle provvigioni di rete.</p>", unsafe_allow_html=True)
+    st.markdown("<p>Monitoraggio in tempo reale delle vendite e delle provvigioni di rete.</p>", unsafe_allow_html=True)
     
     df_o = load_data("Ordini")
     df_n = load_data("Negozi")
@@ -349,7 +338,7 @@ if menu == "📊 Dashboard BI":
         df_filtered = df[mask]
 
         st.markdown("<br>", unsafe_allow_html=True)
-        tab_geo, tab_produttore, tab_matrice, tab_rete = st.tabs(["🌍 Dati Geografici", "📈 Report Aziende", "🎯 Matrice Copertura Clienti", "👥 Performance Rete"])
+        tab_geo, tab_produttore, tab_matrice, tab_rete = st.tabs(["🌍 Dati Geografici", "📈 Report Aziende", "🎯 Matrice Clienti", "👥 Performance Rete"])
         
         with tab_geo:
             st.markdown("<br>", unsafe_allow_html=True)
@@ -375,7 +364,8 @@ if menu == "📊 Dashboard BI":
             st.markdown("<br>#### Matrice Storico Acquisti / Scoperti", unsafe_allow_html=True)
             if not df_filtered.empty:
                 matrice = df_filtered.pivot_table(index='ID_Negozio', columns=['Brand', 'Stagione'], values='Ordinato_€', aggfunc='sum').fillna(0)
-                def highlight_zeros(val): return 'background-color: #FEE2E2; color: #991B1B' if val == 0 else 'background-color: #DCFCE7; color: #166534'
+                # Adattato per il dark mode: Rosso e Verde scuri per non accecare
+                def highlight_zeros(val): return 'background-color: #450a0a; color: #fca5a5' if val == 0 else 'background-color: #052e16; color: #86efac'
                 st.dataframe(matrice.style.format("{:,.2f} €").applymap(highlight_zeros), use_container_width=True)
             
         with tab_rete:
@@ -404,7 +394,7 @@ elif menu == "📝 Nuovo Ordine":
             val = st.number_input("Valore Lordo Ordine (€)", min_value=0.0)
             agente_id = st.selectbox("Riferimento Commerciale (Agente)", df_a['ID_Agente'].tolist()) if ROLE == "Superadmin" else U['ID_Agente']
             
-        st.markdown("<hr style='margin: 1.5em 0; border: 0; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 1px solid #334155;'>", unsafe_allow_html=True)
         st.markdown("#### 2. Termini e Scadenze")
         c4, c5, c6 = st.columns(3)
         with c4: data_o = st.date_input("Data Emissione Ordine", date.today())
@@ -441,7 +431,7 @@ elif menu == "💰 Incassi & Fatture":
             with c2: nuovo_mp = st.selectbox("Modifica Metodo", ["RiBa", "Bonifico", "Assegno", "Contanti"], index=0 if r_dati.get('Metodo_Pagamento') and 'RiBa' in r_dati.get('Metodo_Pagamento') else 1)
             with c3: nuova_scadenza = st.date_input("Ricalcola Scadenza", pd.to_datetime(r_dati['Data_Scadenza']) if pd.notnull(r_dati.get('Data_Scadenza')) else date.today())
             
-            st.markdown("<hr style='margin: 1.5em 0; border: 0; border-top: 1px dashed #CBD5E1;'>", unsafe_allow_html=True)
+            st.markdown("<hr style='border: 1px dashed #334155;'>", unsafe_allow_html=True)
             val_inc = st.number_input("Immetti Transazione Ricevuta (€)", max_value=residuo, min_value=0.00, value=0.00)
             st.markdown("<br>", unsafe_allow_html=True)
             
@@ -503,7 +493,7 @@ elif menu == "🏪 Negozi":
     st.markdown("## 🏪 Gestione Anagrafica Negozi")
     with st.form("f_neg", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        with c1: n, p = st.text_input("Ragione Sociale Completa"), text_input("P.IVA / Codice Fiscale")
+        with c1: n, p = st.text_input("Ragione Sociale Completa"), st.text_input("P.IVA / Codice Fiscale")
         with c2: 
             c = st.text_input("Città Sede Operativa")
             c_prov, c_reg = st.columns(2)
