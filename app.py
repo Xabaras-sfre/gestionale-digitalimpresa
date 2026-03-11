@@ -230,9 +230,9 @@ if not st.session_state.auth:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
-        st.markdown("<h1 style='text-align: center;'>SYSTEM<span style='color: #38BDF8;'>LOGIN</span></h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>GESTIONALE<span style='color: #38BDF8;'>DIGITALIMPRESA</span></h1>", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=True):
-            st.markdown("<p style='text-align: center;'>Autenticazione richiesta per l'accesso ai dati aziendali.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center;'>Versione: Rete Commerciale Abbigliamento ed Accessori</p>", unsafe_allow_html=True)
             u = st.text_input("Username", placeholder="ID Agente o Nome")
             p = st.text_input("Password", type="password", placeholder="••••••••")
             st.markdown("<br>", unsafe_allow_html=True)
@@ -575,4 +575,5 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Record vaporizzato dal Database SQL."); st.rerun()
+
 
