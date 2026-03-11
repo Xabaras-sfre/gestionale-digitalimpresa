@@ -140,8 +140,6 @@ def inject_custom_css():
         </style>
     """, unsafe_allow_html=True)
 
-inject_custom_css()
-
 # --- 2. CONNESSIONE MYSQL (SITEGROUND) ---
 @st.cache_resource
 def init_connection():
@@ -592,4 +590,5 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Eliminato!"); st.rerun()
+
 
