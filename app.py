@@ -9,7 +9,7 @@ from datetime import datetime, date, timedelta
 import time
 
 # --- 1. CONFIGURAZIONE PAGINA E DESIGN DARK MODE ---
-st.set_page_config(page_title="Network 2026", layout="wide", page_icon="👔", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Gestionale Digitalimpresa", layout="wide", page_icon="💼", initial_sidebar_state="expanded")
 
 def inject_custom_css():
     st.markdown("""
@@ -92,7 +92,6 @@ def inject_custom_css():
         ul[data-baseweb="menu"] li { color: var(--text-main) !important; }
         ul[data-baseweb="menu"] li:hover { background-color: var(--border-color) !important; color: var(--accent) !important; }
 
-        /* FIX COLORE TESTO BOTTONI */
         div[data-testid="stFormSubmitButton"] > button, .stButton > button[kind="primary"] {
             background-color: var(--accent) !important; color: #000000 !important; border: none !important;
             border-radius: 8px !important; font-weight: 800 !important; padding: 0.6rem 1.5rem !important;
@@ -186,7 +185,8 @@ if not st.session_state.auth:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
-        st.markdown("<h1 style='text-align: center;'>SYSTEM<span style='color: #38BDF8;'>LOGIN</span></h1>", unsafe_allow_html=True)
+        # NUOVO BRANDING LOGIN
+        st.markdown("<h1 style='text-align: center; line-height: 1.1; font-size: 2.8rem;'>Gestionale<br><span style='color: #38BDF8;'>Digitalimpresa</span></h1>", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=True):
             st.markdown("<p style='text-align: center;'>Autenticazione richiesta per l'accesso ai dati aziendali.</p>", unsafe_allow_html=True)
             u = st.text_input("Username", placeholder="Es. Mario Rossi")
@@ -205,7 +205,8 @@ if not st.session_state.auth:
 U = st.session_state.user
 ROLE = U['Ruolo']
 
-st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='margin-bottom:0;'>NETWORK<br><span style='color:#38BDF8;'>2026</span></h2></div>", unsafe_allow_html=True)
+# NUOVO BRANDING SIDEBAR
+st.sidebar.markdown(f"<div style='text-align: center; padding: 15px 0;'><h2 style='margin-bottom:0; line-height: 1.1; font-size: 1.6rem;'>Gestionale<br><span style='color:#38BDF8;'>Digitalimpresa</span></h2></div>", unsafe_allow_html=True)
 st.sidebar.markdown(f"👤 **{U['Nome']}**<br>🛡️ Livello: `{ROLE}`", unsafe_allow_html=True)
 st.sidebar.divider()
 
@@ -288,8 +289,8 @@ if menu == "📊 Dashboard BI":
 
         with st.expander("🔎 Motore di Ricerca Avanzato", expanded=True):
             f1, f2, f3, f4 = st.columns(4)
-            with f1: date_filter = st.date_input("Periodo Fiscale", [date(2026,1,1), date.today()])
-            # TRADUZIONI: Aggiunto placeholder="Seleziona..." per sovrascrivere "Choose an option"
+            # Aggiunto FORMAT="DD/MM/YYYY" per forzare il calendario europeo
+            with f1: date_filter = st.date_input("Periodo Fiscale", [date(2026,1,1), date.today()], format="DD/MM/YYYY")
             with f2: anno_filter = st.multiselect("Anno Fiscale", sorted(df['Anno'].dropna().unique().astype(int).tolist()), placeholder="Seleziona Anno...")
             with f3: brand_filter = st.multiselect("Filtro Brand", df['Brand'].dropna().unique(), placeholder="Seleziona Brand...")
             with f4: stag_filter = st.multiselect("Filtro Stagione", df['Stagione'].dropna().unique(), placeholder="Seleziona Stagione...")
@@ -347,7 +348,6 @@ elif menu == "📝 Nuovo Ordine":
         c1, c2, c3 = st.columns(3)
         with c1:
             id_o = st.text_input("Codice Identificativo Ordine")
-            # TRADUZIONI: Gestito il caso in cui il database sia vuoto
             neg = st.selectbox("Seleziona Negozio Cliente", df_n['Nome'].tolist() if not df_n.empty else ["Nessun negozio registrato"])
         with c2:
             brand = st.selectbox("Azienda / Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else ["Nessun brand registrato"])
@@ -359,9 +359,10 @@ elif menu == "📝 Nuovo Ordine":
         st.markdown("<hr style='border: 1px solid #334155;'>", unsafe_allow_html=True)
         st.markdown("#### 2. Termini e Scadenze")
         c4, c5, c6 = st.columns(3)
-        with c4: data_o = st.date_input("Data Emissione Ordine", date.today())
+        # FORMATO DATA ITALIANO AGGIUNTO
+        with c4: data_o = st.date_input("Data Emissione Ordine", date.today(), format="DD/MM/YYYY")
         with c5: metodo = st.selectbox("Metodo Pagamento Richiesto", ["Da Definire", "RiBa 30gg", "RiBa 60gg", "RiBa 90gg", "Bonifico", "Assegno", "Contanti"])
-        with c6: scadenza = st.date_input("Scadenza Concordata", date.today() + timedelta(days=30))
+        with c6: scadenza = st.date_input("Scadenza Concordata", date.today() + timedelta(days=30), format="DD/MM/YYYY")
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.form_submit_button("Archivia e Salva Ordine Definitivo", type="primary"):
@@ -391,7 +392,8 @@ elif menu == "💰 Incassi & Fatture":
             c1, c2, c3 = st.columns(3)
             with c1: nuovo_nf = st.text_input("Correggi N° Fattura", value=str(r_dati.get('Numero_Fattura', '')))
             with c2: nuovo_mp = st.selectbox("Modifica Metodo", ["RiBa", "Bonifico", "Assegno", "Contanti"], index=0 if r_dati.get('Metodo_Pagamento') and 'RiBa' in r_dati.get('Metodo_Pagamento') else 1)
-            with c3: nuova_scadenza = st.date_input("Ricalcola Scadenza", pd.to_datetime(r_dati['Data_Scadenza']) if pd.notnull(r_dati.get('Data_Scadenza')) else date.today())
+            # FORMATO DATA ITALIANO AGGIUNTO
+            with c3: nuova_scadenza = st.date_input("Ricalcola Scadenza", pd.to_datetime(r_dati['Data_Scadenza']) if pd.notnull(r_dati.get('Data_Scadenza')) else date.today(), format="DD/MM/YYYY")
             
             st.markdown("<hr style='border: 1px dashed #334155;'>", unsafe_allow_html=True)
             val_inc = st.number_input("Immetti Transazione Ricevuta (€)", max_value=residuo, min_value=0.00, value=0.00)
@@ -419,7 +421,8 @@ elif menu == "💸 Erogazione Provvigioni":
             beneficiario = st.selectbox("Destinatario / Mittente Transazione", lista_beneficiari)
             importo = st.number_input("Ammontare Bonifico/Transazione (€)", min_value=0.01)
         with c2:
-            data_liq = st.date_input("Data Effettiva Movimento", date.today())
+            # FORMATO DATA ITALIANO AGGIUNTO
+            data_liq = st.date_input("Data Effettiva Movimento", date.today(), format="DD/MM/YYYY")
             note = st.text_input("Oggetto / Note Contabili")
             
         st.markdown("<br>", unsafe_allow_html=True)
