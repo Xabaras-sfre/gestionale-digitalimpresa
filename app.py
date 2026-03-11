@@ -14,18 +14,129 @@ st.set_page_config(page_title="Network 2026", layout="wide", page_icon="👔")
 def inject_custom_css():
     st.markdown("""
         <style>
+        /* 1. TYPOGRAPHY: Importa il font Inter (altamente leggibile) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-        [data-testid="stMetric"] {
-            background-color: rgba(175, 175, 175, 0.1); padding: 1.2rem;
-            border-radius: 12px; border-left: 5px solid #0068c9;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); transition: transform 0.2s ease;
+        
+        /* 2. VARIABILI COLORE ACCESSIBILI (Palette WCAG Compliant) */
+        :root {
+            --primary: #1D4ED8;        /* Blu Enterprise - Alto contrasto */
+            --primary-hover: #1E3A8A;  /* Blu scuro per hover */
+            --text-main: #0F172A;      /* Grigio Ardesia Scuro (non nero puro, riposante) */
+            --text-muted: #475569;     /* Grigio testo secondario leggibile */
+            --bg-main: #F8FAFC;        /* Sfondo app grigio chiarissimo */
+            --bg-card: #FFFFFF;        /* Sfondo bianco puro per le card */
+            --focus-ring: #3B82F6;     /* Azzurro per l'anello di focus da tastiera */
         }
-        [data-testid="stMetric"]:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); }
-        div.stButton > button { border-radius: 8px; font-weight: 600; transition: all 0.3s ease; }
-        .stTextInput>div>div>input, .stSelectbox>div>div>div, .stDateInput>div>div>input { border-radius: 8px; }
-        h1, h2, h3 { font-weight: 700 !important; letter-spacing: -0.5px; }
-        [data-testid="stSidebar"] { background-color: rgba(175, 175, 175, 0.03); border-right: 1px solid rgba(175, 175, 175, 0.2); }
+        
+        /* Applica font e colori di base */
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-main);
+        }
+        
+        /* 3. ACCESSIBILITÀ: Focus visibile per navigazione da tastiera */
+        *:focus-visible {
+            outline: 3px solid var(--focus-ring) !important;
+            outline-offset: 2px !important;
+            border-radius: 4px;
+        }
+
+        /* 4. METRICHE (KPI CARDS) - Design moderno a schede */
+        [data-testid="stMetric"] {
+            background-color: var(--bg-card);
+            padding: 1.5rem !important;
+            border-radius: 16px;
+            border: 1px solid #E2E8F0;
+            border-top: 6px solid var(--primary); /* Linea colorata superiore */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        /* Effetto sollevamento al passaggio del mouse */
+        [data-testid="stMetric"]:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-top: 6px solid #3B82F6;
+        }
+        /* Numeri delle metriche più grandi e leggibili */
+        [data-testid="stMetricValue"] {
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 2.2rem;
+            letter-spacing: -0.05em;
+        }
+        
+        /* 5. BOTTONI - Stile "Pillola" e Touch Targets ampi */
+        div.stButton > button {
+            border-radius: 8px;
+            font-weight: 600;
+            min-height: 46px; /* Touch target accessibile (min 44px) */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #CBD5E1;
+        }
+        /* Bottone Azione Principale (Primary) */
+        div.stButton > button[kind="primary"] {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(29, 78, 216, 0.3);
+        }
+        div.stButton > button[kind="primary"]:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 6px 8px -1px rgba(30, 58, 138, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* 6. CAMPI DI INPUT E FORM - Bordi definiti e chiari */
+        .stTextInput>div>div>input, 
+        .stSelectbox>div>div>div, 
+        .stDateInput>div>div>input, 
+        .stNumberInput>div>div>input {
+            border-radius: 8px;
+            border: 2px solid #E2E8F0;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        /* Effetto Focus sui campi di testo */
+        .stTextInput>div>div>input:focus, 
+        .stSelectbox>div>div>div:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        /* 7. MENU LATERALE (SIDEBAR) - Contrasto visivo */
+        [data-testid="stSidebar"] {
+            background-color: #F1F5F9;
+            border-right: 1px solid #E2E8F0;
+        }
+        
+        /* 8. TABS (Schede di navigazione) - Indicatori chiari */
+        [data-testid="stTabs"] button {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            padding-bottom: 1rem;
+        }
+        /* Tab Attivo */
+        [data-testid="stTabs"] button[aria-selected="true"] {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        /* 9. MESSAGGI DI ALERT (Successo, Errore) */
+        [data-testid="stAlert"] {
+            border-radius: 12px;
+            border-left-width: 8px; /* Bordo colorato molto spesso per daltonici */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* Titoli generali */
+        h1, h2, h3 {
+            font-weight: 800 !important;
+            letter-spacing: -0.02em;
+            color: var(--text-main);
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -481,3 +592,4 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Eliminato!"); st.rerun()
+
