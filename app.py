@@ -16,7 +16,6 @@ def inject_custom_css():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
-        /* 1. PALETTE COLORI DARK MODE & FONT GLOBALE */
         :root {
             --bg-main: #0F172A;
             --bg-card: #1E293B;
@@ -38,87 +37,45 @@ def inject_custom_css():
         h1, h2 { font-weight: 800 !important; letter-spacing: -1px; }
         .stMarkdown p, .stCaption p { color: var(--text-muted) !important; }
 
-        /* =========================================================
-           2. FIX MOBILE & SFONDO SIDEBAR
-           ========================================================= */
         [data-testid="stSidebar"] {
-            background-color: #0B1120 !important; /* Colore solido e impenetrabile */
+            background-color: #0B1120 !important;
             border-right: 1px solid var(--border-color) !important;
-            z-index: 999999 !important; /* Forza la sidebar in primissimo piano */
+            z-index: 999999 !important;
         }
         
-        /* Oscuramento sfondo su Mobile (Il "velo" dietro la sidebar aperta) */
         [data-testid="stSidebarOverlay"] {
             background-color: rgba(15, 23, 42, 0.85) !important; 
-            backdrop-filter: blur(5px) !important; /* Effetto sfocatura del testo sottostante */
+            backdrop-filter: blur(5px) !important;
             z-index: 999998 !important;
         }
 
-        /* =========================================================
-           3. IL NUOVO MENU DI NAVIGAZIONE "APP-STYLE"
-           ========================================================= */
+        [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { display: none !important; }
         
-        /* Nasconde i classici "pallini" tondi del radio button */
-        [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
-            display: none !important;
-        }
-        
-        /* Trasforma le opzioni in pulsanti a tutta larghezza */
         [data-testid="stSidebar"] div[role="radiogroup"] > label {
-            background-color: transparent;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 6px;
-            transition: all 0.2s ease-in-out;
-            width: 100%;
-            cursor: pointer;
-            border: 1px solid transparent;
+            background-color: transparent; padding: 12px 16px; border-radius: 12px;
+            margin-bottom: 6px; transition: all 0.2s ease-in-out; width: 100%; cursor: pointer; border: 1px solid transparent;
         }
-        
-        /* Effetto quando passi il mouse sulle voci non selezionate */
         [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            transform: translateX(4px); /* Leggero scorrimento a destra */
+            background-color: rgba(255, 255, 255, 0.05); transform: translateX(4px);
         }
-        
-        /* Effetto della voce ATTUALMENTE SELEZIONATA */
         [data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
             background: linear-gradient(90deg, rgba(56,189,248,0.15) 0%, transparent 100%) !important;
-            border-left: 4px solid var(--accent) !important;
-            border-radius: 4px 12px 12px 4px !important;
+            border-left: 4px solid var(--accent) !important; border-radius: 4px 12px 12px 4px !important;
         }
-        
-        /* Colore del testo della voce selezionata */
         [data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] p {
-            color: var(--accent) !important;
-            font-weight: 700 !important;
-            letter-spacing: 0.3px;
+            color: var(--accent) !important; font-weight: 700 !important; letter-spacing: 0.3px;
         }
+        [data-testid="stSidebar"] div[role="radiogroup"] > label div { margin-left: 0 !important; padding-left: 4px !important; }
 
-        /* Allinea il testo all'interno del nuovo pulsante */
-        [data-testid="stSidebar"] div[role="radiogroup"] > label div {
-            margin-left: 0 !important; 
-            padding-left: 4px !important;
-        }
-
-        /* =========================================================
-           4. CARD, METRICHE, INPUTS E BOTTONI 
-           ========================================================= */
         [data-testid="stForm"], .stExpander {
-            background-color: var(--bg-card) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 16px !important;
-            padding: 24px !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
-            transition: all 0.3s ease !important;
+            background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important;
+            border-radius: 16px !important; padding: 24px !important; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important; transition: all 0.3s ease !important;
         }
         [data-testid="stForm"]:hover, .stExpander:hover { border-color: #475569 !important; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important; }
 
         [data-testid="stMetric"] {
             background-color: var(--bg-card) !important; padding: 20px !important;
-            border-radius: 16px; border: 1px solid var(--border-color);
-            border-top: 4px solid var(--accent); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
+            border-radius: 16px; border: 1px solid var(--border-color); border-top: 4px solid var(--accent); box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.3s ease;
         }
         [data-testid="stMetric"]:hover { transform: translateY(-5px); border-top: 4px solid #7DD3FC; box-shadow: 0 10px 15px rgba(56, 189, 248, 0.1); }
         [data-testid="stMetricValue"] { color: var(--accent) !important; font-weight: 800; font-size: 2.2rem; }
@@ -135,7 +92,7 @@ def inject_custom_css():
         ul[data-baseweb="menu"] li { color: var(--text-main) !important; }
         ul[data-baseweb="menu"] li:hover { background-color: var(--border-color) !important; color: var(--accent) !important; }
 
-        /* Bottoni */
+        /* FIX COLORE TESTO BOTTONI */
         div[data-testid="stFormSubmitButton"] > button, .stButton > button[kind="primary"] {
             background-color: var(--accent) !important; color: #000000 !important; border: none !important;
             border-radius: 8px !important; font-weight: 800 !important; padding: 0.6rem 1.5rem !important;
@@ -147,7 +104,6 @@ def inject_custom_css():
             box-shadow: 0 6px 15px rgba(56, 189, 248, 0.4) !important;
         }
 
-        /* Tabs */
         [data-testid="stTabs"] button { color: var(--text-muted) !important; border-bottom-color: transparent !important; font-weight: 600; }
         [data-testid="stTabs"] button[aria-selected="true"] { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
         [data-testid="stTabs"] button:hover { color: var(--accent) !important; }
@@ -192,7 +148,7 @@ def init_db():
                     conn.execute(text("INSERT INTO Stagioni VALUES (:n, :o)"), {"n": s, "o": o})
 
     except Exception:
-        st.error("Errore di connessione. Controlla i secrets e l'IP su SiteGround.")
+        st.error("Errore di connessione al Server.")
         st.stop()
 
 def upgrade_db():
@@ -230,10 +186,10 @@ if not st.session_state.auth:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
-        st.markdown("<h1 style='text-align: center;'>GESTIONALE<span style='color: #38BDF8;'>DIGITALIMPRESA</span></h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>SYSTEM<span style='color: #38BDF8;'>LOGIN</span></h1>", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=True):
-            st.markdown("<p style='text-align: center;'>Versione: Rete Commerciale Abbigliamento ed Accessori</p>", unsafe_allow_html=True)
-            u = st.text_input("Username", placeholder="ID Agente o Nome")
+            st.markdown("<p style='text-align: center;'>Autenticazione richiesta per l'accesso ai dati aziendali.</p>", unsafe_allow_html=True)
+            u = st.text_input("Username", placeholder="Es. Mario Rossi")
             p = st.text_input("Password", type="password", placeholder="••••••••")
             st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("Accedi al Sistema", type="primary", use_container_width=True):
@@ -249,7 +205,7 @@ if not st.session_state.auth:
 U = st.session_state.user
 ROLE = U['Ruolo']
 
-st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='margin-bottom:0;'>GESTIONALE<br><span style='color:#38BDF8;'>DIGITALIMPRESA</span></h2></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align: center; padding: 20px 0;'><h2 style='margin-bottom:0;'>NETWORK<br><span style='color:#38BDF8;'>2026</span></h2></div>", unsafe_allow_html=True)
 st.sidebar.markdown(f"👤 **{U['Nome']}**<br>🛡️ Livello: `{ROLE}`", unsafe_allow_html=True)
 st.sidebar.divider()
 
@@ -324,21 +280,19 @@ if menu == "📊 Dashboard BI":
 
         saldo_da_ricevere = mio_esigibile - liquidato
 
-        # METRICHE
-        st.markdown("<br>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("📦 Maturato Lordo", f"€ {mio_maturato:,.2f}")
         c2.metric("💰 Esigibile (Fatturato)", f"€ {mio_esigibile:,.2f}")
         c3.metric("💸 Quota Liquidata", f"€ {liquidato:,.2f}")
         c4.metric("⚖️ Saldo Attivo a Credito", f"€ {saldo_da_ricevere:,.2f}")
-        st.markdown("<br>", unsafe_allow_html=True)
 
         with st.expander("🔎 Motore di Ricerca Avanzato", expanded=True):
             f1, f2, f3, f4 = st.columns(4)
             with f1: date_filter = st.date_input("Periodo Fiscale", [date(2026,1,1), date.today()])
-            with f2: anno_filter = st.multiselect("Anno Fiscale", sorted(df['Anno'].dropna().unique().astype(int).tolist()))
-            with f3: brand_filter = st.multiselect("Filtro Brand", df['Brand'].dropna().unique())
-            with f4: stag_filter = st.multiselect("Filtro Stagione", df['Stagione'].dropna().unique())
+            # TRADUZIONI: Aggiunto placeholder="Seleziona..." per sovrascrivere "Choose an option"
+            with f2: anno_filter = st.multiselect("Anno Fiscale", sorted(df['Anno'].dropna().unique().astype(int).tolist()), placeholder="Seleziona Anno...")
+            with f3: brand_filter = st.multiselect("Filtro Brand", df['Brand'].dropna().unique(), placeholder="Seleziona Brand...")
+            with f4: stag_filter = st.multiselect("Filtro Stagione", df['Stagione'].dropna().unique(), placeholder="Seleziona Stagione...")
 
         mask = pd.Series(True, index=df.index)
         if len(date_filter) == 2: mask &= (df['Data_Ordine'] >= pd.to_datetime(date_filter[0])) & (df['Data_Ordine'] <= pd.to_datetime(date_filter[1]))
@@ -348,11 +302,9 @@ if menu == "📊 Dashboard BI":
         
         df_filtered = df[mask]
 
-        st.markdown("<br>", unsafe_allow_html=True)
         tab_geo, tab_produttore, tab_matrice, tab_rete = st.tabs(["🌍 Dati Geografici", "📈 Report Aziende", "🎯 Matrice Clienti", "👥 Performance Rete"])
         
         with tab_geo:
-            st.markdown("<br>", unsafe_allow_html=True)
             col_reg, col_prov, col_cit = st.columns(3)
             with col_reg:
                 st.markdown("#### Volumi per Regione")
@@ -375,12 +327,10 @@ if menu == "📊 Dashboard BI":
             st.markdown("<br>#### Matrice Storico Acquisti / Scoperti", unsafe_allow_html=True)
             if not df_filtered.empty:
                 matrice = df_filtered.pivot_table(index='ID_Negozio', columns=['Brand', 'Stagione'], values='Ordinato_€', aggfunc='sum').fillna(0)
-                # Adattato per il dark mode: Rosso e Verde scuri per non accecare
                 def highlight_zeros(val): return 'background-color: #450a0a; color: #fca5a5' if val == 0 else 'background-color: #052e16; color: #86efac'
                 st.dataframe(matrice.style.format("{:,.2f} €").applymap(highlight_zeros), use_container_width=True)
             
         with tab_rete:
-            st.markdown("<br>", unsafe_allow_html=True)
             if ROLE == "Superadmin":
                 st.markdown("#### Classifica Agenti (Leaderboard)")
                 st.dataframe(df_filtered.groupby('Nome_Agente').agg({'Ordinato_€':'sum', 'Consegnato_€':'sum', 'Mio_Maturato':'sum'}).sort_values('Ordinato_€', ascending=False), use_container_width=True)
@@ -390,16 +340,17 @@ elif menu == "📝 Nuovo Ordine":
     st.markdown("## 📝 Emissione Nuovo Ordine")
     df_n, df_b, df_a = load_data("Negozi"), load_data("Brand"), load_data("Agenti")
     df_s = load_data("Stagioni").sort_values('Ordinamento')
-    lista_stagioni = df_s['Nome_Stagione'].tolist() if not df_s.empty else ["Nessuna stagione"]
+    lista_stagioni = df_s['Nome_Stagione'].tolist() if not df_s.empty else ["Nessuna stagione registrata"]
     
     with st.form("form_ordine", clear_on_submit=True):
         st.markdown("#### 1. Dati Commerciali Base")
         c1, c2, c3 = st.columns(3)
         with c1:
             id_o = st.text_input("Codice Identificativo Ordine")
-            neg = st.selectbox("Seleziona Negozio Cliente", df_n['Nome'].tolist() if not df_n.empty else [])
+            # TRADUZIONI: Gestito il caso in cui il database sia vuoto
+            neg = st.selectbox("Seleziona Negozio Cliente", df_n['Nome'].tolist() if not df_n.empty else ["Nessun negozio registrato"])
         with c2:
-            brand = st.selectbox("Azienda / Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else [])
+            brand = st.selectbox("Azienda / Brand", df_b['Nome_Brand'].tolist() if not df_b.empty else ["Nessun brand registrato"])
             stagione = st.selectbox("Collezione Stagionale", lista_stagioni)
         with c3:
             val = st.number_input("Valore Lordo Ordine (€)", min_value=0.0)
@@ -414,7 +365,7 @@ elif menu == "📝 Nuovo Ordine":
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.form_submit_button("Archivia e Salva Ordine Definitivo", type="primary"):
-            if id_o and neg and brand:
+            if id_o and neg and brand and neg != "Nessun negozio registrato" and brand != "Nessun brand registrato":
                 try:
                     query = """INSERT INTO Ordini (ID_Ordine, Stagione, ID_Agente, ID_Negozio, Brand, `Ordinato_€`, `Consegnato_€`, Stato_Incasso, `Incassato_€`, Data_Ordine, Metodo_Pagamento, Data_Scadenza, Numero_Fattura) 
                                VALUES (:id, :stag, :ag, :neg, :b, :v, 0.0, 'In Attesa', 0.0, :d, :mp, :ds, '')"""
@@ -422,7 +373,7 @@ elif menu == "📝 Nuovo Ordine":
                     st.success("✅ Ordine archiviato correttamente nel Cloud aziendale.")
                 except Exception as e:
                     st.error("⚠️ Attenzione: il Codice Ordine inserito è già presente a sistema.")
-            else: st.error("Errore: Compila tutti i campi obbligatori prima di procedere.")
+            else: st.error("Errore: Compila tutti i campi obbligatori o aggiungi prima Negozi/Brand.")
 
 elif menu == "💰 Incassi & Fatture":
     st.markdown("## 💰 Riconciliazione Fatture e Incassi")
@@ -575,7 +526,3 @@ elif menu == "🔧 Manutenzione":
                 execute_query("DELETE FROM Log_Consegne WHERE ID_Ordine = :id", {"id": target})
                 execute_query("DELETE FROM Log_Pagamenti WHERE ID_Ordine = :id", {"id": target})
                 st.success("Record vaporizzato dal Database SQL."); st.rerun()
-
-
-
-
